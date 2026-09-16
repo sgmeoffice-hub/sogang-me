@@ -8,6 +8,7 @@
 - 원인(추정): ① `HeroRotator`가 5.5초마다 `<video>`를 갈아끼워 홈 탭 하나가 열려 있는 동안 영상·포스터 요청이 계속 발생(Vercel은 /public을 max-age=0으로 내보내 304도 요청 1건) ② 사이트맵 4,742개 URL을 크롤러(AI 수집 봇 포함)가 반복 수집 → ISR 60초 만료마다 함수 호출 ③ 게시판 목록은 searchParams 때문에 항상 동적 렌더.
 - 조치(코드, 이 커밋): `public/media/**` 37개 파일을 R2 `site/media/`에 업로드(immutable 캐시)하고 `content/assets.ts`·`components/StaticPage.tsx` 경로를 R2로 전환(`siteMedia`), `HeroRotator` 영상 요소를 한 번만 마운트(`preload="none"`, 차례 온 것만 로드·재생), `app/robots.ts`에 AI 수집 봇 차단, `next.config.mjs`에 `/media`·`/images` 장기 캐시 헤더, ISR revalidate 60→3600(게시글 상세)·300→3600(고정 페이지)·홈 600(관리자 저장 시 `revalidatePath('/', 'layout')`로 즉시 갱신되므로 안전).
 - 조치(계정): 서비스 복구는 Vercel **Upgrade to Pro**(월 20달러, 팀 Settings → Billing)로만 즉시 가능. 사용량 주기는 매월 17일 리셋으로 보임. Pro 유지 여부는 한 달 뒤 Usage를 보고 결정(코드 조치로 요청 수가 충분히 내려가면 Hobby로 다운그레이드 가능).
+- 복구: 책임자가 2026-09-16 Pro로 업그레이드 → 사이트 즉시 복구. 주의: **정지 중에 push한 커밋(a3f7015)은 Vercel이 배포를 만들지 않았다** — 재개 뒤 새 커밋을 push해야 배포된다(이 커밋). "Downgrade from Pro" 버튼은 기간 종료 예약이 아니라 **즉시** 다운그레이드이므로, 사용량이 내려간 것을 확인한 뒤(최소 9/17 주기 리셋 이후) 눌러야 한다.
 - 남은 점검: 배포 후 Vercel Usage에서 Edge Requests·Function Invocations 일일 추이 확인. 계속 높으면 게시판 목록 페이지를 정적 경로(`/board/[board]/page/[n]`)로 바꾸는 것 검토. `docs/GUIDE-학과홈페이지-Claude제작.md`·docx에도 이 교훈 반영함.
 
 ## 완료 (최근)
