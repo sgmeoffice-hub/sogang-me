@@ -3,15 +3,15 @@ import { staticPages } from '@/content';
 import { getPage } from '@/lib/data';
 import type { Locale } from '@/lib/i18n';
 import { notFound } from 'next/navigation';
-import { assets } from '@/content/assets';
+import { assets, siteMedia } from '@/content/assets';
 import { toHtml } from '@/lib/html';
 const pageImages: Record<string, string> = { 'about/intro': assets.mainVisual, 'about/goals': assets.entrance, 'undergraduate/ureca': assets.ureca, 'undergraduate/activities': assets.festival, 'graduate/admission': assets.research };
 /** 산학 트랙 협력기업 로고 (채용연계 트랙 안내 목적의 공식 로고 표기) */
 const industryLogos: Record<string, { img: string; ko: string; en: string }> = {
-  samsung: { img: '/media/logos/samsung.png', ko: '삼성전자', en: 'Samsung Electronics' },
-  lginnotek: { img: '/media/logos/lginnotek.png', ko: 'LG이노텍', en: 'LG Innotek' },
-  lge: { img: '/media/logos/lge.png', ko: 'LG전자', en: 'LG Electronics' },
-  mobis: { img: '/media/logos/mobis.png', ko: '현대모비스', en: 'Hyundai Mobis' },
+  samsung: { img: `${siteMedia}/logos/samsung.png`, ko: '삼성전자', en: 'Samsung Electronics' },
+  lginnotek: { img: `${siteMedia}/logos/lginnotek.png`, ko: 'LG이노텍', en: 'LG Innotek' },
+  lge: { img: `${siteMedia}/logos/lge.png`, ko: 'LG전자', en: 'LG Electronics' },
+  mobis: { img: `${siteMedia}/logos/mobis.png`, ko: '현대모비스', en: 'Hyundai Mobis' },
 };
 
 /** Renders an editable static page: DB row (pages table) wins, otherwise built-in content. */

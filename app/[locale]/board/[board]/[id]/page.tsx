@@ -8,7 +8,7 @@ import YouTube from '@/components/YouTube';
 import ViewCounter from '@/components/ViewCounter';
 import { toHtml, downloadUrl } from '@/lib/html';
 import { boardSection, festivalCategories } from '@/lib/nav';
-export const revalidate = 60;
+export const revalidate = 3600; // 관리자 저장 시 즉시 갱신되므로 길게 — 4,700여 글을 크롤러가 훑을 때 함수 호출을 줄인다
 
 export default async function PostPage({ params }: { params: { locale: Locale; board: string; id: string } }) {
   const { locale: l, board } = params; const ko = l === 'ko';

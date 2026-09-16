@@ -1,6 +1,14 @@
 # HANDOFF — 세션 간 인수인계
 
-마지막 갱신: 2026-09-05
+마지막 갱신: 2026-09-16
+
+## 장애 (2026-09-16) — Vercel Hobby 한도 초과로 사이트 정지(HTTP 402 DEPLOYMENT_DISABLED)
+- 증상: me.sogang.ac.kr 전체가 402. Vercel 팀 "SG office" 사이드바에 "exceeded the Hobby fair use limits. Upgrade to Pro to resume service". Supabase는 정상.
+- 사용량(8/17~9/16): Edge Requests **1.6M/1M**, Function Invocations **2.1M/1M**, Fluid Active CPU **12h/4h** 초과. Fast Data Transfer 41.6/100GB, Fast Origin Transfer 8.45/10GB.
+- 원인(추정): ① `HeroRotator`가 5.5초마다 `<video>`를 갈아끼워 홈 탭 하나가 열려 있는 동안 영상·포스터 요청이 계속 발생(Vercel은 /public을 max-age=0으로 내보내 304도 요청 1건) ② 사이트맵 4,742개 URL을 크롤러(AI 수집 봇 포함)가 반복 수집 → ISR 60초 만료마다 함수 호출 ③ 게시판 목록은 searchParams 때문에 항상 동적 렌더.
+- 조치(코드, 이 커밋): `public/media/**` 37개 파일을 R2 `site/media/`에 업로드(immutable 캐시)하고 `content/assets.ts`·`components/StaticPage.tsx` 경로를 R2로 전환(`siteMedia`), `HeroRotator` 영상 요소를 한 번만 마운트(`preload="none"`, 차례 온 것만 로드·재생), `app/robots.ts`에 AI 수집 봇 차단, `next.config.mjs`에 `/media`·`/images` 장기 캐시 헤더, ISR revalidate 60→3600(게시글 상세)·300→3600(고정 페이지)·홈 600(관리자 저장 시 `revalidatePath('/', 'layout')`로 즉시 갱신되므로 안전).
+- 조치(계정): 서비스 복구는 Vercel **Upgrade to Pro**(월 20달러, 팀 Settings → Billing)로만 즉시 가능. 사용량 주기는 매월 17일 리셋으로 보임. Pro 유지 여부는 한 달 뒤 Usage를 보고 결정(코드 조치로 요청 수가 충분히 내려가면 Hobby로 다운그레이드 가능).
+- 남은 점검: 배포 후 Vercel Usage에서 Edge Requests·Function Invocations 일일 추이 확인. 계속 높으면 게시판 목록 페이지를 정적 경로(`/board/[board]/page/[n]`)로 바꾸는 것 검토. `docs/GUIDE-학과홈페이지-Claude제작.md`·docx에도 이 교훈 반영함.
 
 ## 완료 (최근)
 - **기존 홈페이지 → 새 사이트 전체 콘텐츠 이관 완료** (2026-08-31): `docs/LEGACY-BACKUP.md`의 파이프라인 실행 완료. 백업 2개 다운로드·SHA-256 검증 → `parse_dump.py` → plan/upload/insert 전부 성공

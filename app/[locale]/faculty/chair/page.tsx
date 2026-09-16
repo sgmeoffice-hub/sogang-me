@@ -2,7 +2,7 @@ import PageHero from '@/components/PageHero';
 import FacultyCard from '@/components/FacultyCard';
 import { getChair } from '@/lib/data';
 import type { Locale } from '@/lib/i18n';
-export const revalidate = 300;
+export const revalidate = 3600;
 export default async function Chair({ params }: { params: { locale: Locale } }) {
   const ko = params.locale === 'ko';
   const list = await getChair();

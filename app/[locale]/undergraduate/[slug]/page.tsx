@@ -9,7 +9,7 @@ import { majorFields, introCourse, introSlides } from '@/content/majors';
 import { getFaculty } from '@/lib/data';
 import type { Locale } from '@/lib/i18n';
 import { notFound } from 'next/navigation';
-export const revalidate = 300;
+export const revalidate = 3600;
 const slugs = ['admission', 'majors', 'curriculum', 'competency', 'calendar', 'activities', 'ureca'];
 
 export default async function UG({ params }: { params: { locale: Locale; slug: string } }) {

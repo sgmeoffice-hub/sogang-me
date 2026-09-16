@@ -7,7 +7,7 @@ import { formatOffice } from '@/lib/buildings';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { toHtml } from '@/lib/html';
-export const revalidate = 300;
+export const revalidate = 3600;
 
 export default async function FacultyDetail({ params }: { params: { locale: Locale; id: string } }) {
   const l = params.locale; const ko = l === 'ko';

@@ -3,7 +3,7 @@ import { history } from '@/content/pages-about';
 import type { Locale } from '@/lib/i18n';
 import { notFound } from 'next/navigation';
 
-export const revalidate = 300;
+export const revalidate = 3600;
 
 export default async function AboutPage({ params }: { params: { locale: Locale; slug: string } }) {
   const { locale: l, slug } = params;

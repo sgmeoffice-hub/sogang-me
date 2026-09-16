@@ -5,7 +5,7 @@ import { emblemOf } from '@/components/FieldEmblems';
 import { getFaculty } from '@/lib/data';
 import { areas } from '@/content/areas';
 import type { Locale } from '@/lib/i18n';
-export const revalidate = 300;
+export const revalidate = 3600;
 
 export default async function Faculty({ params, searchParams }: { params: { locale: Locale }; searchParams: { field?: string } }) {
   const l = params.locale; const ko = l === 'ko';

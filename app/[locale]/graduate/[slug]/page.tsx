@@ -10,7 +10,7 @@ import { areas } from '@/content/areas';
 import { formatOffice } from '@/lib/buildings';
 import type { Locale } from '@/lib/i18n';
 import { notFound } from 'next/navigation';
-export const revalidate = 300;
+export const revalidate = 3600;
 
 export default async function Grad({ params }: { params: { locale: Locale; slug: string } }) {
   const { locale: l, slug } = params; const ko = l === 'ko';

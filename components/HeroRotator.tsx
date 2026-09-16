@@ -20,11 +20,17 @@ function interleavedOrder(videos: HeroVideoItem[]) {
 
 /** 홈 히어로 배경: 분야 영상들을 랜덤(분야 교차) 순서로 5초 남짓 간격 크로스페이드 순환.
  *  아래 CSS 전용 포스터 슬라이드쇼가 항상 깔려 있어, JS 하이드레이션 실패·자동재생 차단 등
- *  어떤 환경에서도 최소한 정지 화면에 갇히지는 않는다. */
+ *  어떤 환경에서도 최소한 정지 화면에 갇히지는 않는다.
+ *
+ *  트래픽 주의(2026-09-16 Vercel 무료 한도 초과로 사이트가 멈춘 원인 중 하나):
+ *  예전엔 직전·현재·다음 3개만 마운트하고 5.5초마다 <video>를 갈아끼웠는데, 갈아끼울 때마다 영상·포스터 요청이
+ *  다시 나가서 홈 탭 하나가 열려 있는 동안 계속 요청이 쌓였다. 지금은 영상 요소를 한 번만 만들고(preload="none")
+ *  차례가 온 것만 재생한다 — 한 영상은 한 탭에서 딱 한 번만 내려받는다. 영상 파일 자체도 Vercel이 아닌 R2에서 온다. */
 export default function HeroRotator({ videos }: { videos: HeroVideoItem[] }) {
   const [order, setOrder] = useState<number[] | null>(null);
   const [pos, setPos] = useState(0);
   const refs = useRef<(HTMLVideoElement | null)[]>([]);
+  const loaded = useRef<Set<number>>(new Set());
 
   useEffect(() => {
     // 순서 셔플은 클라이언트에서만 (SSR 마크업 불일치 방지)
@@ -39,17 +45,22 @@ export default function HeroRotator({ videos }: { videos: HeroVideoItem[] }) {
 
   const n = order?.length || 0;
   const active = order ? order[pos % n] : -1;
-  // 14개를 전부 내려받으면 첫 재생이 느려지므로, 직전·현재·다음 3개만 마운트한다.
-  // 직전 것은 크로스페이드가 끝날 때까지 남겨 두는 용도.
-  const mounted = order ? new Set([order[(pos - 1 + n) % n], active, order[(pos + 1) % n]]) : new Set<number>();
+  const nextIdx = order ? order[(pos + 1) % n] : -1;
 
+  // 현재 것은 재생, 다음 것은 미리 불러오기(첫 1회만), 나머지는 정지. 요소는 절대 갈아끼우지 않는다.
   useEffect(() => {
     refs.current.forEach((v, i) => {
       if (!v) return;
-      if (i === active) { try { v.currentTime = 0; } catch {} v.play().catch(() => {}); }
-      else v.pause();
+      if (i === active) {
+        if (!loaded.current.has(i)) { loaded.current.add(i); v.preload = 'auto'; v.load(); }
+        try { v.currentTime = 0; } catch {}
+        v.play().catch(() => {});
+      } else {
+        if (i === nextIdx && !loaded.current.has(i)) { loaded.current.add(i); v.preload = 'auto'; v.load(); }
+        if (!v.paused) v.pause();
+      }
     });
-  }, [active]);
+  }, [active, nextIdx]);
 
   const cycle = videos.length * 5.5;
   return (
@@ -59,11 +70,11 @@ export default function HeroRotator({ videos }: { videos: HeroVideoItem[] }) {
         <img key={v.poster} src={v.poster} alt="" className="hero-fade absolute inset-0 w-full h-full object-cover"
           style={{ animationDuration: `${cycle}s`, animationDelay: `${i * 5.5 - cycle}s` }} />
       ))}
-      {/* JS가 살아 있으면 영상 레이어가 위에서 재생·순환 — 현재/다음/직전만 로드 */}
-      {order && videos.map((v, i) => mounted.has(i) ? (
-        <video key={v.src} ref={(el) => { refs.current[i] = el; }} src={v.src} autoPlay={i === active} muted playsInline loop preload="auto" poster={v.poster}
+      {/* JS가 살아 있으면 영상 레이어가 위에서 재생·순환 — 모든 요소를 한 번만 마운트, 차례가 올 때만 로드 */}
+      {order && videos.map((v, i) => (
+        <video key={v.src} ref={(el) => { refs.current[i] = el; }} src={v.src} poster={v.poster} muted playsInline loop preload="none"
           className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-[1200ms] ease-in-out ${i === active ? 'opacity-100' : 'opacity-0'}`} />
-      ) : null)}
+      ))}
     </div>
   );
 }
