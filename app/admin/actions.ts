@@ -59,7 +59,17 @@ export async function savePost(fd: FormData) {
   if (!row.title_ko.trim()) throw new Error('제목을 입력해 주세요.');
 
   let prev: any = null;
-  if (id) { const { data } = await sb.from('posts').select('title_ko,content_ko,excerpt_ko,category,title_en,content_en,excerpt_en,category_en,created_at').eq('id', Number(id)).single(); prev = data; }
+  if (id) { const { data } = await sb.from('posts').select('title_ko,content_ko,excerpt_ko,category,title_en,content_en,excerpt_en,category_en,created_at,thumbnail_url').eq('id', Number(id)).single(); prev = data; }
+
+  /* 썸네일 자동 채움 (2026-09-17): 썸네일 칸을 따로 올리지 않고 본문에만 사진을 넣은 글의 카드가 기본 표지로 나오던 문제.
+   *  - 썸네일이 비어 있으면 본문(국문→영문) 첫 사진을 쓴다.
+   *  - 이전에 자동으로 채운 썸네일(=이전 본문에 있던 사진)이 새 본문에서 사라졌으면 새 본문 첫 사진으로 바꾼다(없으면 비움).
+   *  - 관리자가 썸네일을 직접 올린 경우(본문에 없는 URL)는 건드리지 않는다. */
+  const firstImg = (html: string | null | undefined) => (String(html || '').match(/<img[^>]+src="([^"]+)"/i) || [])[1] || null;
+  const bodyImg = firstImg(row.content_ko) || firstImg(row.content_en);
+  const inBody = (u: string | null) => !!u && (String(row.content_ko || '').includes(u) || String(row.content_en || '').includes(u));
+  const wasAuto = !!prev?.thumbnail_url && row.thumbnail_url === prev.thumbnail_url && (String(prev.content_ko || '').includes(prev.thumbnail_url) || String(prev.content_en || '').includes(prev.thumbnail_url));
+  if (!row.thumbnail_url || (wasAuto && !inBody(row.thumbnail_url))) row.thumbnail_url = bodyImg;
   // excerpt_en·category_en은 폼에 입력칸이 없으므로 기존 값을 보존한다 (폼에 있으면 그 값 사용)
   row.excerpt_en = fd.has('excerpt_en') ? nul(str(fd, 'excerpt_en')) : (prev?.excerpt_en ?? null);
   row.category_en = fd.has('category_en') ? nul(str(fd, 'category_en')) : (prev?.category_en ?? null);
