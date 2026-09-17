@@ -37,7 +37,8 @@ body { @apply bg-sg-paper text-sg-ink font-sans antialiased; word-break: keep-al
 .h-display { @apply font-brand text-[2.4rem] md:text-[3.4rem] leading-[1.15] tracking-[-0.01em]; }
 .h-section { @apply font-brand text-[2rem] md:text-[2.6rem] leading-tight; }
 .h-sub { @apply font-brand text-[1.5rem] md:text-[1.9rem] leading-snug; }
-.prose-sg { @apply text-[16.5px] leading-[1.9] text-[#2b2b2b]; }
+/* 줄간격 1.9→1.7 (2026-09-17 박현주 선생님 요청: 게시글 본문 줄간격이 넓다). 관리자 편집기도 같은 클래스를 써서 함께 바뀐다. */
+.prose-sg { @apply text-[16.5px] leading-[1.7] text-[#2b2b2b]; }
 .prose-sg h2 { @apply font-brand text-[1.7rem] md:text-[2rem] mt-14 mb-5 leading-snug; }
 .prose-sg h3 { @apply text-[1.15rem] font-bold mt-9 mb-3 flex items-center gap-2 text-sg-ink; }
 .prose-sg h3::before { content: ''; @apply inline-block w-2.5 h-2.5 bg-sg-cardinal; }

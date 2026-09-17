@@ -139,4 +139,5 @@ export const history = [
   { y: '2020', m: '09', ko: '4단계 BK21사업 교육연구팀 선정', en: 'Selected for BK21 FOUR' },
   { y: '2022', m: '09', ko: '제16대 학과장 김동철 교수', en: 'Prof. Dongchoul Kim, 16th chair' },
   { y: '2024', m: '09', ko: '제17대 학과장 강성원 교수', en: 'Prof. Sungwon Kang, 17th chair' },
+  { y: '2026', m: '09', ko: '제18대 학과장 김남근 교수', en: 'Prof. Namkeun Kim, 18th chair' },
 ];

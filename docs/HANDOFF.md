@@ -1,6 +1,14 @@
 # HANDOFF — 세션 간 인수인계
 
-마지막 갱신: 2026-09-16
+마지막 갱신: 2026-09-17
+
+## 완료 (2026-09-17) — 박현주 선생님 요청 (메일 9/17, 캡처 PPT)
+- 연혁에 `2026.09 제18대 학과장 김남근 교수` 추가 (`content/pages-about.ts` history, en: Prof. Namkeun Kim, 18th chair)
+- 관리자 본문 편집기에 **글자 색**(프리셋 6개 + 색 고르기) · **정렬**(좌/중/우) 버튼 추가 (`components/admin/RichEditor.tsx`, tiptap extension-text-align/color/text-style 설치). 저장되는 HTML은 `style="text-align:…"`, `<span style="color:…">` — 공개 화면 `toHtml`은 스타일을 지우지 않으므로 그대로 반영됨
+- 본문 줄간격 `.prose-sg` 1.9 → 1.7 (`app/globals.css`, 관리자 편집기도 같은 클래스라 함께 적용)
+- 게시글 상세 제목 2.5rem → 2rem (모바일 1.9→1.6rem), `break-keep` 추가 (`app/[locale]/board/[board]/[id]/page.tsx`)
+- 로컬 E2E: 편집기에서 가운데 정렬·빨강 적용 시 hidden input HTML에 스타일 포함 확인, 공개 글 h1 32px·line-height 28px 확인, 연혁 페이지에 18대 표시 확인
+- 참고: 현대모비스 트랙 26년 하반기 선발 안내는 박현주 선생님이 9/11 게시판에 이미 게시함 (코드 작업 없음)
 
 ## 장애 (2026-09-16) — Vercel Hobby 한도 초과로 사이트 정지(HTTP 402 DEPLOYMENT_DISABLED)
 - 증상: me.sogang.ac.kr 전체가 402. Vercel 팀 "SG office" 사이드바에 "exceeded the Hobby fair use limits. Upgrade to Pro to resume service". Supabase는 정상.
