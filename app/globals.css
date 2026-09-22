@@ -2,8 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 서강체 — fetched into /public/fonts by .github/workflows/assets.yml (from sogang.ac.kr UI guide) */
-@font-face { font-family: 'SogangFont'; src: url('/fonts/SogangFont.ttf') format('truetype'); font-weight: 400 700; font-display: swap; }
+/* 제목 폰트: Pretendard 유지. 서강체(SogangFont)는 파일이 없어 한 번도 적용된 적이 없고(모든 페이지가 /fonts/SogangFont.ttf 404 요청),
+   2026-09-22 책임자가 비교 후 "기존 폰트 유지"로 결정해 선언을 제거함. (로컬에 서강체를 설치한 사람에게만 다르게 보이지 않도록 스택에서도 뺌) */
 
 :root {
   /* Sogang UI color system (sogang.ac.kr/intro/symbol/s_colorsystem) */
@@ -32,7 +32,7 @@ body { @apply bg-sg-paper text-sg-ink font-sans antialiased; word-break: keep-al
 :focus-visible { outline: 2px solid var(--sg-cardinal); outline-offset: 3px; }
 
 .container-site { @apply mx-auto w-full max-w-site px-5 md:px-8; }
-.font-brand { font-family: 'SogangFont', 'Pretendard Variable', Pretendard, serif; }
+.font-brand { font-family: 'Pretendard Variable', Pretendard, serif; }
 .eyebrow { @apply text-[13px] font-semibold tracking-[0.08em] text-sg-cardinal uppercase; }
 .h-display { @apply font-brand text-[2.4rem] md:text-[3.4rem] leading-[1.15] tracking-[-0.01em]; }
 .h-section { @apply font-brand text-[2rem] md:text-[2.6rem] leading-tight; }

@@ -25,7 +25,7 @@ const config: Config = {
       fontFamily: {
         sans: ['Pretendard Variable', 'Pretendard', 'system-ui', 'sans-serif'],
         mono: ['"IBM Plex Mono"', 'ui-monospace', 'monospace'],
-        brand: ['SogangFont', 'Pretendard Variable', 'Pretendard', 'serif'],
+        brand: ['Pretendard Variable', 'Pretendard', 'serif'],
       },
       maxWidth: { site: '1320px' },
     },
