@@ -157,6 +157,7 @@ export async function saveFaculty(fd: FormData) {
   if (category) {
     row.is_emeritus = category === 'emeritus';
     if (category === 'chair') row.field = 'chair';
+    else if (category === 'emeritus') row.field = null; // 퇴임 처리(구분만 명예교수로 변경) 시 전임 시절 분야가 남지 않게 — 공개 페이지·목록은 명예교수의 field를 쓰지 않는다
     else if (row.field === 'chair') row.field = null;
   } else row.is_emeritus = bool(fd, 'is_emeritus');
   row.published = bool(fd, 'published');

@@ -28,10 +28,12 @@ function HeroNewsRows({ locale, items }: { locale: Locale; items: HeroNewsItem[]
         const d = fmtDate(p.created_at); // 2026.09.22 (legacy 글 UTC 날짜 규칙은 fmtDate 주석 참조)
         return (
           <li key={p.id}>
-            <Link href={`/${locale}/board/${p.board}/${p.id}`}
+            {/* prefetch={false}: 첫 화면에 보이는 링크라 홈 진입마다 글 3건 RSC 프리페치(엣지 요청 +3)가 나가는 것을 막는다 — 클릭 시 내비게이션은 그대로 */}
+            <Link href={`/${locale}/board/${p.board}/${p.id}`} prefetch={false}
               className="group flex flex-col gap-1.5 px-4 py-3 transition-colors hover:bg-white/5 focus-visible:bg-white/10 focus-visible:outline-white focus-visible:outline-offset-[-3px]">
-              {/* 제목 먼저(스크린리더도 제목부터 읽음). 고정글 칩은 제목 앞 인라인 → "중요, 제목" 순 */}
-              <span className="block text-[14px] font-semibold leading-snug text-white/90 break-keep line-clamp-2 group-hover:text-white">
+              {/* 제목 먼저(스크린리더도 제목부터 읽음). 고정글 칩은 제목 앞 인라인 → "중요, 제목" 순.
+                  `block`을 붙이면 line-clamp의 display:-webkit-box를 덮어써 말줄임이 풀리므로 넣지 않는다 */}
+              <span className="text-[14px] font-semibold leading-snug text-white/90 break-keep line-clamp-2 group-hover:text-white">
                 {p.is_pinned && <span className="mr-1.5 inline-block align-[2px] bg-sg-cardinal px-1.5 text-[10px] font-bold leading-[15px] text-white">{T(locale, 'pinned')}</span>}
                 {t(p, 'title', locale)}
               </span>
@@ -53,6 +55,11 @@ function HeroNews({ locale, items, allHref }: { locale: Locale; items: HeroNewsI
   if (!items.length) return null;
   const bp = BP[locale];
   const head = <><span aria-hidden className="h-2 w-2 shrink-0 bg-sg-cardinal" />{T(locale, 'latestTitle')}</>;
+  // '전체 소식' 링크: 같은 페이지 앵커(#news)는 순수 <a>로 — next/link로 감싸면 App Router 내비게이션이 돌아
+  // 30초 뒤부터는 클릭마다 홈 RSC 페이로드를 다시 받는다(불필요한 요청). 다른 경로일 때만 Link(프리페치 없이).
+  const AllLink = ({ className }: { className: string }) => allHref.startsWith('#')
+    ? <a href={allHref} className={className}>{T(locale, 'latestAll')} →</a>
+    : <Link href={allHref} prefetch={false} className={className}>{T(locale, 'latestAll')} →</Link>;
   return (
     <>
       {/* 데스크톱 카드: 오버레이가 가장 옅은 오른쪽(rgba .35)에 놓이므로 tint를 진하게(.70) + 블러. 블러 미지원은 단색 .85 */}
@@ -62,7 +69,7 @@ function HeroNews({ locale, items, allHref }: { locale: Locale; items: HeroNewsI
         <div className="h-[3px] bg-sg-cardinal" />
         <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 pt-3.5 pb-2.5">
           <h2 id="hero-news-h" className="flex items-center gap-2 font-brand text-[1.15rem] leading-none">{head}</h2>
-          <Link href={allHref} className="whitespace-nowrap text-[12px] font-semibold text-white/60 hover:text-white">{T(locale, 'latestAll')} →</Link>
+          <AllLink className="whitespace-nowrap text-[12px] font-semibold text-white/60 hover:text-white" />
         </div>
         <HeroNewsRows locale={locale} items={items} />
       </aside>
@@ -77,7 +84,7 @@ function HeroNews({ locale, items, allHref }: { locale: Locale; items: HeroNewsI
         </summary>
         <div className="border-t border-white/10">
           <HeroNewsRows locale={locale} items={items} />
-          <Link href={allHref} className="block border-t border-white/10 px-4 py-2.5 text-[12.5px] font-semibold text-white/70 hover:text-white">{T(locale, 'latestAll')} →</Link>
+          <AllLink className="flex min-h-[44px] items-center border-t border-white/10 px-4 text-[12.5px] font-semibold text-white/70 hover:text-white" />
         </div>
       </details>
     </>

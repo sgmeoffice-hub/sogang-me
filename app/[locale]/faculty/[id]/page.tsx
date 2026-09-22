@@ -16,7 +16,8 @@ export const revalidate = 3600;
 export default async function FacultyDetail({ params }: { params: { locale: Locale; id: string } }) {
   const l = params.locale; const ko = l === 'ko';
   const f = await getFacultyOne(Number(params.id)); if (!f || f.published === false) notFound();
-  const area = areas.find((a) => a.id === f.field);
+  // 명예교수는 분야를 쓰지 않는다 — 전임 시절 field가 남아 있어도 배지·분야 섹션·같은 분야 목록이 뜨지 않게 (리뷰 지적: 그대로 두면 명예교수 전체가 '같은 분야'로 잘못 나열되고 목록이 두 번 렌더됨)
+  const area = f.is_emeritus ? undefined : areas.find((a) => a.id === f.field);
   const research = toHtml(t(f, 'research', l)); const bio = toHtml(t(f, 'bio', l));
   const kind = f.is_emeritus ? 'emeritus' : f.field === 'chair' ? 'chair' : 'professors';
   const listHref = `/${l}/faculty${kind === 'emeritus' ? '/emeritus' : kind === 'chair' ? '/chair' : ''}`;
@@ -33,11 +34,12 @@ export default async function FacultyDetail({ params }: { params: { locale: Loca
   const contacts: { k: string; v: React.ReactNode }[] = [];
   if (office) contacts.push({ k: T(l, 'office'), v: office });
   if (f.tel) contacts.push({ k: T(l, 'tel'), v: <a href={`tel:${f.tel.replace(/[^\d+]/g, '')}`} className="font-mono hover:text-sg-cardinal">{f.tel}</a> });
-  if (f.email) contacts.push({ k: T(l, 'email'), v: <a href={`mailto:${f.email}`} className="hover:text-sg-cardinal">{f.email}</a> });
-  if (f.lab_url) contacts.push({ k: T(l, 'website'), v: <a href={f.lab_url} target="_blank" rel="noreferrer" className="text-sg-cardinal underline underline-offset-4">{host} ↗</a> });
+  if (f.email) contacts.push({ k: T(l, 'email'), v: <a href={`mailto:${f.email}`} className="break-all hover:text-sg-cardinal">{f.email}</a> });
+  if (f.lab_url) contacts.push({ k: T(l, 'website'), v: <a href={f.lab_url} target="_blank" rel="noreferrer" className="break-all text-sg-cardinal underline underline-offset-4">{host} ↗<span className="sr-only">{ko ? ' (새 창)' : ' (opens in new window)'}</span></a> });
 
+  // 배지 글자는 분야색이 아닌 잉크색 — 열·유체 주황(#d86018)은 흰 배경 위 13px 글자로 대비 3.75:1이라 AA 미달. 색은 점(●)으로만 표시
   const Badge = () => area ? (
-    <Link href={`/${l}/graduate/areas#${area.id}`} className="inline-flex items-center gap-2 text-[13px] font-semibold tracking-wide hover:underline underline-offset-4" style={{ color: area.color }}>
+    <Link href={`/${l}/graduate/areas#${area.id}`} className="inline-flex items-center gap-2 text-[13px] font-semibold tracking-wide text-sg-gray11 hover:text-sg-ink hover:underline underline-offset-4">
       <span className="w-2 h-2 rounded-full" style={{ background: area.color }} />{ko ? area.ko : area.en}
     </Link>
   ) : kind !== 'professors' ? (
@@ -49,7 +51,8 @@ export default async function FacultyDetail({ params }: { params: { locale: Loca
         <span className="w-12 h-14 shrink-0 bg-sg-mist overflow-hidden">{p.photo_url ? <img src={p.photo_url} alt="" loading="lazy" className="w-full h-full object-cover" /> : <span className="w-full h-full grid place-items-center font-brand text-xl text-sg-gray5">{(p.name_ko || '').slice(0, 1)}</span>}</span>
         <span className="min-w-0 flex-1">
           <span className="block font-bold text-[15.5px] leading-tight group-hover:text-sg-cardinal transition-colors">{t(p, 'name', l)} <span className="text-[13px] font-medium text-sg-gray9">{t(p, 'title', l)}</span></span>
-          {(t(p, 'lab', l) || (ko && p.name_en)) && <span className="block mt-0.5 text-[13px] text-sg-gray11 truncate">{t(p, 'lab', l) || p.name_en}</span>}
+          {/* 보조 줄: 전임은 연구실명, 명예교수 목록은 영문 이름으로 통일(연구실이 있는 분과 없는 분이 섞이지 않게) */}
+          {(f.is_emeritus ? (ko && p.name_en) : t(p, 'lab', l)) && <span className="block mt-0.5 text-[13px] text-sg-gray11 truncate">{f.is_emeritus ? p.name_en : t(p, 'lab', l)}</span>}
         </span>
         <span className="text-sg-gray5 group-hover:text-sg-cardinal transition-colors" aria-hidden>→</span>
       </Link>
@@ -91,7 +94,7 @@ export default async function FacultyDetail({ params }: { params: { locale: Loca
           {contacts.length > 0 && (
             <dl className="mt-7 grid sm:grid-cols-2 gap-x-10 gap-y-4 border-t border-sg-line pt-6 text-[15px]">
               {contacts.map((c) => (
-                <div key={c.k}><dt className="text-[12.5px] font-semibold tracking-[0.08em] uppercase text-sg-gray9">{c.k}</dt><dd className="mt-1 text-sg-ink break-all">{c.v}</dd></div>
+                <div key={c.k}><dt className="text-[12.5px] font-semibold tracking-[0.08em] uppercase text-sg-gray9">{c.k}</dt><dd className="mt-1 text-sg-ink break-keep">{c.v}</dd></div>
               ))}
             </dl>
           )}
@@ -128,7 +131,7 @@ export default async function FacultyDetail({ params }: { params: { locale: Loca
             <div className="absolute inset-0 opacity-[.12]" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, #fff 1px, transparent 0)', backgroundSize: '22px 22px' }} />
             <div className="absolute right-2 bottom-2 w-[170px] opacity-30 sm:opacity-80 sm:right-4 sm:w-[230px] transition-transform duration-700 group-hover:scale-105"><E className="w-full h-auto text-white" /></div>
             <div className="relative max-w-full sm:max-w-[62%]">
-              <p className="text-[12.5px] font-semibold tracking-[0.12em] text-white/70 uppercase">{ko ? `${T(l, 'field')} · ${area.en}` : 'Research field'}</p>
+              <p className="text-[12.5px] font-semibold tracking-[0.12em] text-white/70 uppercase">{ko ? area.en : 'Research field'}</p>
               <h3 className="mt-2 font-brand text-[1.6rem] md:text-[2rem] leading-tight break-keep">{ko ? area.ko : area.en}</h3>
               <p className="mt-3 text-[14.5px] leading-relaxed text-white/85 break-keep">{ko ? area.descKo : area.descEn}</p>
               <ul className="mt-4 flex flex-wrap gap-1.5">{(ko ? area.keywordsKo : area.keywordsEn).map((k) => <li key={k} className="text-[12px] px-2 py-0.5 border border-white/25 rounded-full" style={{ backgroundColor: 'rgba(255,255,255,.12)' }}>{k}</li>)}</ul>
@@ -140,8 +143,8 @@ export default async function FacultyDetail({ params }: { params: { locale: Loca
           <div className="min-w-0">
             <div className="flex items-end justify-between gap-4">
               <div>
-                <p className="eyebrow">{ko ? '같은 분야 교수진' : 'Faculty in this field'}</p>
-                <h3 className="mt-2 font-brand text-[1.5rem] md:text-[1.8rem] leading-none break-keep">{ko ? area.ko : area.en}</h3>
+                <p className="eyebrow">{ko ? area.ko : area.en}</p>
+                <h3 className="mt-2 font-brand text-[1.5rem] md:text-[1.8rem] leading-none break-keep">{ko ? '같은 분야 교수진' : 'Faculty in this field'}</h3>
               </div>
               <Link href={`/${l}/faculty?field=${area.id}`} className="shrink-0 text-[14px] font-semibold text-sg-gray11 hover:text-sg-cardinal whitespace-nowrap">{T(l, 'more')} +</Link>
             </div>
