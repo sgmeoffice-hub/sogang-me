@@ -75,7 +75,8 @@ function HeroNews({ locale, items, allHref }: { locale: Locale; items: HeroNewsI
       </aside>
 
       {/* 모바일·태블릿 시트: 접힌 48px 한 줄(최신 1건 제목) → 탭하면 3건. 폰 GPU 부담을 피해 blur 없이 단색 */}
-      <details className={`${bp.sheet} group mt-6 max-w-2xl rise rise-4 motion-reduce:!animate-none border border-white/15 bg-black/75`}>
+      {/* 처음부터 펼친 상태(open) — 책임자 요청(2026-09-22): 모바일에서도 3건이 바로 보이게. 접기는 여전히 가능 */}
+      <details open className={`${bp.sheet} group mt-6 max-w-2xl rise rise-4 motion-reduce:!animate-none border border-white/15 bg-black/75`}>
         <summary className="flex min-h-[48px] cursor-pointer select-none list-none items-center gap-3 px-4 text-[15px] focus-visible:outline-white focus-visible:outline-offset-[-3px] [&::-webkit-details-marker]:hidden">
           <span className="flex shrink-0 items-center gap-2 font-brand leading-none">{head}</span>
           <span className="min-w-0 flex-1 truncate text-[13.5px] text-white/85 group-open:hidden">{t(items[0], 'title', locale)}</span>
