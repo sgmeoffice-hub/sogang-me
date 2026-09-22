@@ -1,12 +1,90 @@
 import Link from 'next/link';
-import { T, type Locale } from '@/lib/i18n';
+import { T, t, type Locale, type UIKey } from '@/lib/i18n';
 import { DesignEmblem, ThermalEmblem, ControlEmblem, ManufacturingEmblem } from './FieldEmblems';
 import { areas } from '@/content/areas';
 import HeroRotator from './HeroRotator';
+import { fmtDate, type Post } from './PostCard';
 
 const Em = [DesignEmblem, ThermalEmblem, ControlEmblem, ManufacturingEmblem];
 
-export default function HeroVideo({ locale, videoUrl, poster, taglineKo, taglineEn, fieldVideos }: { locale: Locale; videoUrl?: string; poster?: string; taglineKo?: string | null; taglineEn?: string | null; fieldVideos?: { src: string; poster: string }[] }) {
+/** 히어로 '최신 소식' 위젯 한 줄 — getHomeData의 latest 쿼리 select와 같은 필드 */
+export type HeroNewsItem = Pick<Post, 'id' | 'board' | 'title_ko' | 'title_en' | 'created_at' | 'is_pinned'>;
+
+/* 카드가 뜨는 브레이크포인트를 로케일로 나눈다.
+   국문 태그라인(4.6rem, 실측 ≈550~630px)은 lg 왼쪽 컬럼 656px에 2줄 그대로 들어가지만,
+   영문('behind everything that moves' ≈980px)은 lg에서 한 줄 더 꺾이므로 영문은 xl부터 카드를 띄운다. */
+const BP = {
+  ko: { wrap: 'lg:flex lg:items-end lg:gap-8 xl:gap-10', card: 'hidden lg:block lg:w-[272px] xl:w-[340px]', sheet: 'lg:hidden' },
+  // 영문 xl(1280)은 카드 300px → 왼쪽 컬럼 876px(1440과 동일)이어야 'behind everything that moves'가 한 줄로 남는다(실측: 340px면 3줄로 늘어남)
+  en: { wrap: 'xl:flex xl:items-end xl:gap-10', card: 'hidden xl:block xl:w-[300px] 2xl:w-[340px]', sheet: 'xl:hidden' },
+} as const;
+
+/* 3줄 목록 — 데스크톱 카드(aside)와 모바일 시트(details)가 공유한다.
+   행에는 rise 애니메이션을 두지 않는다: 닫힌 <details> 안의 애니메이션은 열 때마다 새로 시작해 1초간 빈 화면이 된다. */
+function HeroNewsRows({ locale, items }: { locale: Locale; items: HeroNewsItem[] }) {
+  return (
+    <ul className="divide-y divide-white/10">
+      {items.map((p) => {
+        const d = fmtDate(p.created_at); // 2026.09.22 (legacy 글 UTC 날짜 규칙은 fmtDate 주석 참조)
+        return (
+          <li key={p.id}>
+            <Link href={`/${locale}/board/${p.board}/${p.id}`}
+              className="group flex flex-col gap-1.5 px-4 py-3 transition-colors hover:bg-white/5 focus-visible:bg-white/10 focus-visible:outline-white focus-visible:outline-offset-[-3px]">
+              {/* 제목 먼저(스크린리더도 제목부터 읽음). 고정글 칩은 제목 앞 인라인 → "중요, 제목" 순 */}
+              <span className="block text-[14px] font-semibold leading-snug text-white/90 break-keep line-clamp-2 group-hover:text-white">
+                {p.is_pinned && <span className="mr-1.5 inline-block align-[2px] bg-sg-cardinal px-1.5 text-[10px] font-bold leading-[15px] text-white">{T(locale, 'pinned')}</span>}
+                {t(p, 'title', locale)}
+              </span>
+              <span className="flex items-center gap-2 text-[11px] leading-none">
+                <span className="min-w-0 truncate border border-white/25 px-1.5 py-[3px] font-semibold tracking-[.04em] text-white/80">{T(locale, p.board as UIKey) || p.board}</span>
+                <time dateTime={d.replace(/\./g, '-')} className="ml-auto shrink-0 tabular-nums text-white/65">{d}</time>
+              </span>
+            </Link>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+/** 히어로 '최신 소식' 위젯 — 서버 렌더·JS 0. 데스크톱: 텍스트 컬럼 오른쪽 유리 카드 / 모바일·태블릿: 버튼 아래 접힌 한 줄(details).
+ *  둘 다 DOM에 들어가고 CSS로 한쪽만 보인다(display:none은 접근성 트리에서도 빠짐). 글이 0건이면 아무것도 그리지 않는다. */
+function HeroNews({ locale, items, allHref }: { locale: Locale; items: HeroNewsItem[]; allHref: string }) {
+  if (!items.length) return null;
+  const bp = BP[locale];
+  const head = <><span aria-hidden className="h-2 w-2 shrink-0 bg-sg-cardinal" />{T(locale, 'latestTitle')}</>;
+  return (
+    <>
+      {/* 데스크톱 카드: 오버레이가 가장 옅은 오른쪽(rgba .35)에 놓이므로 tint를 진하게(.70) + 블러. 블러 미지원은 단색 .85 */}
+      <aside aria-labelledby="hero-news-h"
+        className={`${bp.card} shrink-0 rise motion-reduce:!animate-none border border-white/15 bg-black/85 supports-[backdrop-filter]:bg-black/70 backdrop-blur-md shadow-[inset_0_1px_0_rgba(255,255,255,.12),0_24px_60px_-24px_rgba(0,0,0,.7)]`}
+        style={{ animationDelay: '.9s' }}>
+        <div className="h-[3px] bg-sg-cardinal" />
+        <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 pt-3.5 pb-2.5">
+          <h2 id="hero-news-h" className="flex items-center gap-2 font-brand text-[1.15rem] leading-none">{head}</h2>
+          <Link href={allHref} className="whitespace-nowrap text-[12px] font-semibold text-white/60 hover:text-white">{T(locale, 'latestAll')} →</Link>
+        </div>
+        <HeroNewsRows locale={locale} items={items} />
+      </aside>
+
+      {/* 모바일·태블릿 시트: 접힌 48px 한 줄(최신 1건 제목) → 탭하면 3건. 폰 GPU 부담을 피해 blur 없이 단색 */}
+      <details className={`${bp.sheet} group mt-6 max-w-2xl rise rise-4 motion-reduce:!animate-none border border-white/15 bg-black/75`}>
+        <summary className="flex min-h-[48px] cursor-pointer select-none list-none items-center gap-3 px-4 text-[15px] focus-visible:outline-white focus-visible:outline-offset-[-3px] [&::-webkit-details-marker]:hidden">
+          <span className="flex shrink-0 items-center gap-2 font-brand leading-none">{head}</span>
+          <span className="min-w-0 flex-1 truncate text-[13.5px] text-white/85 group-open:hidden">{t(items[0], 'title', locale)}</span>
+          <span className="hidden min-w-0 flex-1 truncate text-[12.5px] text-white/60 group-open:block">{T(locale, 'latestSub')}</span>
+          <svg aria-hidden className="ml-auto h-4 w-4 shrink-0 text-white/60 transition-transform group-open:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9l6 6 6-6" /></svg>
+        </summary>
+        <div className="border-t border-white/10">
+          <HeroNewsRows locale={locale} items={items} />
+          <Link href={allHref} className="block border-t border-white/10 px-4 py-2.5 text-[12.5px] font-semibold text-white/70 hover:text-white">{T(locale, 'latestAll')} →</Link>
+        </div>
+      </details>
+    </>
+  );
+}
+
+export default function HeroVideo({ locale, videoUrl, poster, taglineKo, taglineEn, fieldVideos, news, newsHref }: { locale: Locale; videoUrl?: string; poster?: string; taglineKo?: string | null; taglineEn?: string | null; fieldVideos?: { src: string; poster: string }[]; news?: HeroNewsItem[]; newsHref?: string }) {
   const ko = locale === 'ko';
   const tagline = ko ? taglineKo : taglineEn;
   return (
@@ -27,19 +105,25 @@ export default function HeroVideo({ locale, videoUrl, poster, taglineKo, tagline
       </div>
 
       <div className="container-site relative flex flex-col justify-center min-h-[calc(100svh-80px)] py-16">
-        <p className="rise rise-1 text-[15px] md:text-[17px] font-semibold tracking-[0.12em] text-white/80">
-          {ko ? 'SOGANG UNIVERSITY · 기계공학과' : 'SOGANG UNIVERSITY · MECHANICAL ENGINEERING'}
-        </p>
-        <h1 className="mt-5 max-w-4xl font-brand text-[2.6rem] sm:text-[3.6rem] lg:text-[4.6rem] leading-[1.12]">
-          {tagline ? <span className="block rise rise-2">{tagline}</span> : (
-            <><span className="block rise rise-2">{T(locale, 'hero1')}</span><span className="block rise rise-3">{T(locale, 'hero2')}</span></>
-          )}
-        </h1>
-        <p className="mt-6 max-w-2xl text-[17px] md:text-[19px] leading-relaxed text-white/85 rise rise-4">{T(locale, 'heroSub')}</p>
-        <div className="mt-9 flex flex-wrap gap-3 rise rise-4">
-          <Link href={`/${locale}/undergraduate/admission`} className="btn-primary">{T(locale, 'ugAdmission')}</Link>
-          <Link href={`/${locale}/graduate/admission`} className="btn-light">{T(locale, 'gradAdmission')}</Link>
-          <Link href={`/${locale}/faculty`} className="btn-light">{T(locale, 'professors')}</Link>
+        {/* 텍스트 컬럼 + (lg/xl) 오른쪽 최신 소식 카드. 카드가 없으면 flex 자식이 하나라 현행과 같은 레이아웃 */}
+        <div className={BP[locale].wrap}>
+          <div className="min-w-0 flex-1">
+            <p className="rise rise-1 text-[15px] md:text-[17px] font-semibold tracking-[0.12em] text-white/80">
+              {ko ? 'SOGANG UNIVERSITY · 기계공학과' : 'SOGANG UNIVERSITY · MECHANICAL ENGINEERING'}
+            </p>
+            <h1 className="mt-5 max-w-4xl font-brand text-[2.6rem] sm:text-[3.6rem] lg:text-[4.6rem] leading-[1.12]">
+              {tagline ? <span className="block rise rise-2">{tagline}</span> : (
+                <><span className="block rise rise-2">{T(locale, 'hero1')}</span><span className="block rise rise-3">{T(locale, 'hero2')}</span></>
+              )}
+            </h1>
+            <p className="mt-6 max-w-2xl text-[17px] md:text-[19px] leading-relaxed text-white/85 rise rise-4">{T(locale, 'heroSub')}</p>
+            <div className="mt-9 flex flex-wrap gap-3 rise rise-4">
+              <Link href={`/${locale}/undergraduate/admission`} className="btn-primary">{T(locale, 'ugAdmission')}</Link>
+              <Link href={`/${locale}/graduate/admission`} className="btn-light">{T(locale, 'gradAdmission')}</Link>
+              <Link href={`/${locale}/faculty`} className="btn-light">{T(locale, 'professors')}</Link>
+            </div>
+          </div>
+          <HeroNews locale={locale} items={news ?? []} allHref={newsHref ?? `/${locale}/board/notice`} />
         </div>
 
         {/* Four fields strip */}

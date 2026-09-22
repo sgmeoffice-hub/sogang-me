@@ -13,7 +13,7 @@ export const revalidate = 600; // 관리자 저장 시 즉시 갱신되므로 �
 
 export default async function Home({ params }: { params: { locale: Locale } }) {
   const l = params.locale; const ko = l === 'ko';
-  const [{ groups, gallery, banners, settings, promo, videos }, labCount] = await Promise.all([getHomeData(), getLabCount()]);
+  const [{ groups, gallery, banners, settings, promo, videos, latest }, labCount] = await Promise.all([getHomeData(), getLabCount()]);
   const sections: string[] = settings.sections || ['hero', 'promo', 'intro', 'news', 'videos', 'programs', 'quicklinks', 'gallery'];
   const on = (s: string) => sections.includes(s);
 
@@ -31,7 +31,7 @@ export default async function Home({ params }: { params: { locale: Locale } }) {
 
   return (
     <>
-      {on('hero') && <HeroVideo locale={l} videoUrl={settings.hero_video_url ?? undefined} fieldVideos={heroFieldVideos} poster={settings.hero_poster_url ?? assets.mainVisual} taglineKo={settings.tagline_ko} taglineEn={settings.tagline_en} />}
+      {on('hero') && <HeroVideo locale={l} videoUrl={settings.hero_video_url ?? undefined} fieldVideos={heroFieldVideos} poster={settings.hero_poster_url ?? assets.mainVisual} taglineKo={settings.tagline_ko} taglineEn={settings.tagline_en} news={latest} newsHref={on('news') ? '#news' : `/${l}/board/notice`} />}
 
       {on('promo') && promo.length > 0 && (
         <section className="container-site -mt-14 relative z-10">
@@ -100,7 +100,7 @@ export default async function Home({ params }: { params: { locale: Locale } }) {
       )}
 
       {on('news') && (
-        <section className="container-site py-20">
+        <section id="news" className="container-site py-20 scroll-mt-24">
           <Reveal className="mb-12"><p className="eyebrow">{T(l, 'newsTitle')}</p><h2 className="h-section mt-3">{ko ? '기계공학과 소식' : 'News from the department'}</h2></Reveal>
           <NewsRows locale={l} groups={groups} />
         </section>

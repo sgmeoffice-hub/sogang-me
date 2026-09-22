@@ -24,6 +24,8 @@ export const ui = {
     heroSub: '서강대학교 기계공학과는 설계·재료역학, 열·유체·에너지, 제어·진동·로보틱스, 생산공학 네 기초 분야를 바탕으로 Physical AI 시대의 융합 연구를 이끕니다.',
     since: '1993년 설립', labs: '개 연구실', profs: '명 전임교수', bk21: '4단계 BK21 교육연구팀',
     newsTitle: '학과 소식', programsTitle: '교육 프로그램', galleryTitle: '갤러리', areasTitle: '연구 분야',
+    // 홈 히어로 '최신 소식' 위젯 (pinned는 게시글 고정 칩 — 예약 '승인 대기' pending과 다른 키)
+    latestTitle: '최신 소식', latestSub: '모든 게시판의 최신 글', latestAll: '전체 소식', pinned: '중요',
     ug: '학부과정', grad: '대학원과정', industry: '산학협력',
     ugDesc: '130학점 심화전공과 5개 세부 분야 로드맵', gradDesc: '석사·박사·통합과정',
     urecaDesc: '학부생 연구 참여 프로그램 (Intern / Fellow)', industryDesc: '삼성전자·LG·현대모비스 채용연계 트랙',
@@ -42,6 +44,7 @@ export const ui = {
     heroSub: 'Built on four foundations — design & mechanics, thermal-fluid & energy, control-vibration-robotics, and manufacturing — Sogang Mechanical Engineering leads convergence research for the age of Physical AI.',
     since: 'Founded 1993', labs: 'research labs', profs: 'full-time faculty', bk21: 'BK21 FOUR program',
     newsTitle: 'News', programsTitle: 'Programs', galleryTitle: 'Gallery', areasTitle: 'Research areas',
+    latestTitle: 'Latest News', latestSub: 'Latest across all boards', latestAll: 'All news', pinned: 'PIN',
     ug: 'Undergraduate', grad: 'Graduate', industry: 'Industry',
     ugDesc: '130-credit intensive major with five specialization roadmaps', gradDesc: 'MS, PhD and integrated programs',
     urecaDesc: 'Undergraduate research experience (Intern / Fellow)', industryDesc: 'Samsung, LG and Hyundai Mobis hiring-linked tracks',

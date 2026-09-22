@@ -11,11 +11,13 @@ const safe = async <T,>(fn: () => Promise<{ data: T | null; error: any }>, fallb
 };
 
 const homeBoards = ['notice', 'academic', 'research', 'award', 'alumni_news'] as const;
+/** 히어로 '최신 소식' 위젯에서 제외하는 큐레이션 모음 게시판 (운영 중 archive 등 추가 가능) */
+const heroNewsExclude = ['promo', 'videos'];
 
 export async function getHomeData() {
   const sb = createPublicClient();
   // 게시판별로 따로 조회한다 — 합쳐서 최신순으로 자르면 글이 많은 게시판(공지)이 다른 줄(동문 소식)을 밀어낸다
-  const [postsByBoard, gallery, banners, settings, promo, videos] = await Promise.all([
+  const [postsByBoard, gallery, banners, settings, promo, videos, latest] = await Promise.all([
     Promise.all(homeBoards.map((b) => safe<Post[]>(() => sb.from('posts').select('id,board,title_ko,title_en,excerpt_ko,excerpt_en,thumbnail_url,images,video_url,created_at,is_pinned')
       .eq('board', b).eq('published', true).eq('show_on_home', true)
       .order('is_pinned', { ascending: false }).order('created_at', { ascending: false }).limit(24) as any, []))),
@@ -24,10 +26,16 @@ export async function getHomeData() {
     safe<any>(() => sb.from('site_settings').select('value').eq('key', 'home').maybeSingle() as any, null),
     safe<Post[]>(() => sb.from('posts').select('id,board,title_ko,title_en,excerpt_ko,excerpt_en,thumbnail_url,attachments,created_at').eq('board', 'promo').eq('published', true).order('sort_order').order('created_at', { ascending: false }).limit(2) as any, []),
     safe<Post[]>(() => sb.from('posts').select('id,board,title_ko,title_en,excerpt_ko,excerpt_en,thumbnail_url,video_url,category,category_en,sort_order,created_at').eq('board', 'videos').eq('published', true).order('sort_order').limit(4) as any, []),
+    // 히어로 '최신 소식' 위젯(2026-09-22 학과장 요청) — 큐레이션 모음(promo·videos)을 뺀 전 게시판 최신 3건. 관리자 '메인 페이지에 노출'(show_on_home) 존중.
+    // 고정글(is_pinned)은 일부러 우선 정렬하지 않는다(오래된 고정 공지 3건이 위젯을 영구 점유하면 '업데이트' 목적이 사라짐) — 칩 표시에만 쓴다.
+    // id desc는 자정 시각만 있는 legacy 글 동률 tie-break (getAdjacent와 같은 규칙).
+    safe<Post[]>(() => sb.from('posts').select('id,board,title_ko,title_en,created_at,is_pinned')
+      .eq('published', true).eq('show_on_home', true).not('board', 'in', `(${heroNewsExclude.join(',')})`)
+      .order('created_at', { ascending: false }).order('id', { ascending: false }).limit(3) as any, []),
   ]);
   const n = settings?.value?.news_count ?? 8;
   const groups: Record<string, Post[]> = Object.fromEntries(homeBoards.map((b, i) => [b, (postsByBoard[i] || []).slice(0, n)]));
-  return { groups, gallery, banners, settings: settings?.value ?? {}, promo, videos };
+  return { groups, gallery, banners, settings: settings?.value ?? {}, promo, videos, latest };
 }
 
 export async function getPosts(board: string, page = 1, per = 15, q = '') {
