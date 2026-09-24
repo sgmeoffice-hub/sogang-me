@@ -58,9 +58,11 @@ export default function Header({ locale }: { locale: Locale }) {
             className="hidden md:flex items-center px-3 py-2 border border-sg-line hover:border-sg-ink">
             <img src="/images/brand/bk21-four.png" alt="BK21 FOUR" width={44} height={20} style={{ width: 44, height: 20, maxWidth: 'none' }} />
           </a>
-          <Link href={switchHref} onClick={switchLang} className="flex items-center gap-2 px-3 py-2 border border-sg-line text-[13px] font-semibold text-sg-ink hover:border-sg-ink" aria-label={other === 'en' ? 'Switch to English' : '한국어로 전환'}>
+          {/* 일반 <a>여야 한다 — next/link로 두면 화면에 보이는 순간 /xx?setlang=1 을 프리페치하고, 미들웨어가 그것을 '언어 선택'으로 받아
+              쿠키를 반대 언어로 바꿔 버린다(2026-09-24 발견: 한국어 페이지를 보기만 해도 다음 접속이 영어로 열리던 원인) */}
+          <a href={switchHref} onClick={switchLang} className="flex items-center gap-2 px-3 py-2 border border-sg-line text-[13px] font-semibold text-sg-ink hover:border-sg-ink" aria-label={other === 'en' ? 'Switch to English' : '한국어로 전환'}>
             <Flag code={other} /> {other === 'en' ? 'ENG' : '한국어'}
-          </Link>
+          </a>
           <button onClick={() => setOpen(!open)} className="lg:hidden p-2 text-sg-ink" aria-label="Menu" aria-expanded={open}>
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">{open ? <path d="M6 6l12 12M18 6L6 18" /> : <path d="M3 7h18M3 12h18M3 17h18" />}</svg>
           </button>

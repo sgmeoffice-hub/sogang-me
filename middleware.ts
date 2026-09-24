@@ -92,7 +92,10 @@ export async function middleware(req: NextRequest) {
       const url = req.nextUrl.clone();
       url.searchParams.delete('setlang');
       const res = NextResponse.redirect(url, 307);
-      res.cookies.set('sg_lang', first, { path: '/', maxAge: 60 * 60 * 24 * 365 });
+      // 실제 사용자의 클릭(문서 이동)일 때만 저장한다. next/link 프리페치·RSC 요청(헤더 rsc / next-router-prefetch)이 이 주소를
+      // 미리 받아 가면서 쿠키가 반대 언어로 뒤집히던 문제(2026-09-24)의 서버 쪽 방어선.
+      const prefetch = req.headers.has('next-router-prefetch') || req.headers.has('rsc') || (req.headers.get('sec-fetch-dest') || 'document') !== 'document';
+      if (!prefetch) res.cookies.set('sg_lang', first, { path: '/', maxAge: 60 * 60 * 24 * 365 });
       return res;
     }
     return NextResponse.next();
