@@ -100,10 +100,14 @@ export async function middleware(req: NextRequest) {
   const cookie = req.cookies.get('sg_lang')?.value;
   const country = req.headers.get('x-vercel-ip-country') || req.geo?.country || '';
   const accept = req.headers.get('accept-language') || '';
+  // 판별 순서(2026-09-24 책임자: "영어로 접속되는 일이 잦다"): ① 전환 버튼으로 저장한 쿠키 ② 브라우저 언어에 한국어가 있으면 한국어
+  // ③ 한국 IP면 한국어(폰 언어를 영어로 쓰는 한국 사용자 포함) ④ 그 밖(해외 IP + 한국어 없는 브라우저)만 영어.
+  // 예전에는 IP 국가를 브라우저 언어보다 먼저 봐서 VPN·해외 출장·해외로 잡히는 통신망에서는 한국어 브라우저도 영어로 갔다.
   let locale = 'ko';
   if (cookie && isLocale(cookie)) locale = cookie;
+  else if (/(^|[,;\s])ko\b/i.test(accept)) locale = 'ko';
   else if (country) locale = country === 'KR' ? 'ko' : 'en';
-  else if (accept && !accept.toLowerCase().startsWith('ko')) locale = 'en';
+  else if (accept) locale = 'en';
   const url = req.nextUrl.clone();
   url.pathname = `/${locale}${pathname === '/' ? '' : pathname}`;
   return NextResponse.redirect(url);
