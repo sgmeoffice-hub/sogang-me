@@ -1,4 +1,5 @@
 import { glossaryPrompt, polishEnglish } from './glossary';
+import { facultyNames, namesIn, namesPrompt, enforceNames, type NameRow } from './names';
 
 /**
  * KO -> EN 번역.
@@ -51,20 +52,20 @@ async function freeHtml(html: string): Promise<string> {
   return res.join('');
 }
 
-async function viaClaude(fields: Record<string, string>): Promise<Record<string, string> | null> {
+async function viaClaude(fields: Record<string, string>, names: NameRow[]): Promise<Record<string, string> | null> {
   const { default: Anthropic } = await import('@anthropic-ai/sdk');
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   const res = await client.messages.create({
     model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-5',
     max_tokens: 16000,
-    system: SYSTEM,
+    system: SYSTEM + namesPrompt(names),   // 원문에 나오는 교수의 공식 영문 이름·연구실명을 용어집으로
     messages: [{ role: 'user', content: JSON.stringify(fields) }],
   });
   if (res.stop_reason === 'max_tokens') { console.error('translate: response truncated at max_tokens'); return null; }
   const text = res.content.map((c: any) => (c.type === 'text' ? c.text : '')).join('').replace(/```json|```/g, '').trim();
   try {
     const parsed = JSON.parse(text);
-    for (const k of Object.keys(parsed)) if (typeof parsed[k] === 'string') parsed[k] = polishEnglish(parsed[k]);
+    for (const k of Object.keys(parsed)) if (typeof parsed[k] === 'string') parsed[k] = enforceNames(names, polishEnglish(parsed[k]));
     return parsed;
   } catch { return null; }
 }
@@ -88,14 +89,16 @@ export async function translateLongContent(html: string, chunkSize = 9000): Prom
 export async function translateKoToEn(fields: Record<string, string>): Promise<Record<string, string> | null> {
   const entries = Object.entries(fields).filter(([, v]) => v && v.trim());
   if (!entries.length) return {};
+  // 원문에 등장하는 교수(이름·연구실)만 용어집으로 — 두 경로(Claude/무료) 모두 후처리로도 한 번 더 맞춘다
+  const names = namesIn(await facultyNames(), entries.map(([, v]) => v).join('\n'));
   if (process.env.ANTHROPIC_API_KEY) {
     // 키가 설정돼 있으면 Claude 실패를 무료 번역기로 조용히 대체하지 않는다 —
     // 품질이 다른 결과가 검수 완료(en_verified)처럼 저장되는 것을 막고, 실패는 실패로 보고한다.
-    return await viaClaude(Object.fromEntries(entries));
+    return await viaClaude(Object.fromEntries(entries), names);
   }
   try {
     const out: Record<string, string> = {};
-    for (const [k, v] of entries) out[k] = /<[a-z][^>]*>/i.test(v) ? await freeHtml(v) : await freeText(v);
+    for (const [k, v] of entries) out[k] = enforceNames(names, /<[a-z][^>]*>/i.test(v) ? await freeHtml(v) : await freeText(v));
     return out;
   } catch (e: any) { console.error('translate failed', e?.message); return null; }
 }
