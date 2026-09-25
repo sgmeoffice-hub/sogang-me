@@ -6,6 +6,8 @@ export { namesIn, namesPrompt, enforceNames, type NameRow } from './names-core';
  *  행정선생님은 지금처럼 국문으로만 쓰면 되고, 번역기가 이름을 제멋대로 로마자화("Seok-Hwan Jeong", "Shin Chung-soo")하는 것을
  *  ① 프롬프트 용어집 ② 후처리 치환(lib/names-core.ts) 두 겹으로 막는다 (2026-09-24 책임자 요청). 교수 정보를 /adm에서 고치면 10분 안에 반영. */
 let cache: { at: number; rows: NameRow[] } | null = null;
+/** 관리자가 교수 정보를 저장하면 바로 새 이름표를 쓰도록 캐시를 비운다(같은 서버 인스턴스 기준, 나머지는 10분 안에 갱신) */
+export function clearFacultyNamesCache() { cache = null; }
 
 export async function facultyNames(): Promise<NameRow[]> {
   if (cache && Date.now() - cache.at < 10 * 60 * 1000) return cache.rows;

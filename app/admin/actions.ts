@@ -1,4 +1,6 @@
 'use server';
+import { syncFacultyNameInPosts } from '@/lib/names-sync';
+import { clearFacultyNamesCache } from '@/lib/names';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase-server';
@@ -164,6 +166,8 @@ export async function saveFaculty(fd: FormData) {
   row.groups = researchGroupDefs.filter((g) => bool(fd, `group_${g.id}`)).map((g) => g.id);
   /* 교수 정보도 같은 정책: 국문이 바뀐 항목만 다시 번역 */
   const mode = str(fd, 'translate_mode') || 'changed';
+  // 이름·연구실 영문이 새로 생기거나 바뀌었는지 — 바뀌면 저장 후 기존 게시글 영문도 맞춘다(lib/names-sync)
+  const { data: before } = id ? await sb.from('faculty').select('name_en,lab_en').eq('id', Number(id)).single() : { data: null as any };
   if (mode !== 'none') {
     let prev: any = null;
     if (id) { const { data } = await sb.from('faculty').select('lab_ko,lab_en,research_ko,research_en,bio_ko,bio_en,name_ko,name_en').eq('id', Number(id)).single(); prev = data; }
@@ -189,6 +193,10 @@ export async function saveFaculty(fd: FormData) {
   }
   const q = id ? sb.from('faculty').update(row).eq('id', Number(id)) : sb.from('faculty').insert(row);
   const { error } = await q; if (error) throw new Error(error.message);
+  clearFacultyNamesCache();
+  if (row.name_ko && row.name_en && (!before || before.name_en !== row.name_en || before.lab_en !== row.lab_en)) {
+    await syncFacultyNameInPosts(sb as any, { ko: row.name_ko, en: row.name_en, labKo: row.lab_ko, labEn: row.lab_en }).catch(() => 0);
+  }
   revalidatePath('/', 'layout'); redirect(`${base()}/faculty`);
 }
 export async function deleteFaculty(fd: FormData) {
