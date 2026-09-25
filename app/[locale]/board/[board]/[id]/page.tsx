@@ -33,7 +33,7 @@ export default async function PostPage({ params }: { params: { locale: Locale; b
         <span className="eyebrow">{T(l, board as any) || board}</span>
         {/* 제목 크기 2.5rem→2rem (2026-09-17 박현주 선생님 요청: 본문 대비 제목이 너무 크다) */}
         <h1 className="mt-3 font-brand text-[1.6rem] md:text-[2rem] leading-snug break-keep">{t(p, 'title', l)}</h1>
-        {!ko && (!p.title_en || !p.content_en) && <p className="mt-2 text-[13px] text-sg-gray9">Korean original · English translation not yet available</p>}
+        {!ko && (!p.title_en || (!p.content_en && /[가-힣]/.test((p.content_ko || '').replace(/<[^>]+>/g, '')))) && <p className="mt-2 text-[13px] text-sg-gray9">Korean original · English translation not yet available</p>}
         <div className="mt-5 flex flex-wrap gap-x-6 gap-y-1 text-[14px] text-sg-gray9">
           <span>{T(l, 'author')} · {p.author}</span><span>{T(l, 'date')} · {fmtDate(p.created_at)}</span><span>{T(l, 'views')} · {p.view_count}</span>
         </div>
