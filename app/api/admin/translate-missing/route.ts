@@ -31,11 +31,12 @@ export async function POST() {
       if (out.content) upd.content_en = out.content;
       if (out.category) upd.category_en = out.category;
     }
-    // mark empty sources as done so the loop terminates
-    if (!p.title_en && !upd.title_en) upd.title_en = p.title_ko || '';
-    if (!p.excerpt_en && !upd.excerpt_en) upd.excerpt_en = p.excerpt_ko || '';
-    if (!p.content_en && !upd.content_en) upd.content_en = p.content_ko || '';
-    if (!p.category_en && !upd.category_en) upd.category_en = p.category || '';
+    // 원문이 비어 있는 칸만 ''로 표시한다 — 번역 실패분에 국문을 복사하면 영문처럼 보여 다시 번역되지 않는다(2026-09-25)
+    if (!p.title_en && !upd.title_en && !(p.title_ko || '').trim()) upd.title_en = '';
+    if (!p.excerpt_en && !upd.excerpt_en && !(p.excerpt_ko || '').trim()) upd.excerpt_en = '';
+    if (!p.content_en && !upd.content_en && !(p.content_ko || '').trim()) upd.content_en = '';
+    if (!p.category_en && !upd.category_en && !(p.category || '').trim()) upd.category_en = '';
+    if (!Object.keys(upd).length) { errors.push(`#${p.id} empty translation`); continue; }
     const { error } = await sb.from('posts').update(upd).eq('id', p.id);
     if (error) errors.push(`#${p.id} ${error.message}`); else done++;
   }

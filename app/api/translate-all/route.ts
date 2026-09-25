@@ -46,12 +46,19 @@ export async function POST(req: Request) {
       // 본문은 길이 제한 없이 문단 단위로 나눠 번역한다 — 12,000자에서 잘려 저장되던 문제 수정
       const content = wantContent ? await translateLongContent(p.content_ko) : undefined;
       if (out === null || (wantContent && content === null)) { errors.push('post ' + p.id); continue; }
+      // 번역이 비어 돌아온 항목은 비워 둔다 — 국문을 영문 칸에 복사하면 '번역된 것'처럼 보여 다시 번역되지 않는다(2026-09-25)
       const upd: any = { en_verified: force ? new Date().toISOString() : null };
-      if (fields.title) upd.title_en = out.title || p.title_ko;
-      if (wantContent) upd.content_en = content || p.content_ko;
-      if (fields.excerpt) upd.excerpt_en = out.excerpt || p.excerpt_ko;
-      if (fields.category) upd.category_en = out.category || p.category;
-      if (!force) { upd.title_en = upd.title_en ?? p.title_en ?? p.title_ko; upd.content_en = upd.content_en ?? p.content_en ?? p.content_ko ?? ''; upd.excerpt_en = upd.excerpt_en ?? p.excerpt_en ?? p.excerpt_ko ?? ''; delete upd.en_verified; }
+      if (fields.title && out.title) upd.title_en = out.title;
+      if (wantContent && content) upd.content_en = content;
+      if (fields.excerpt && out.excerpt) upd.excerpt_en = out.excerpt;
+      if (fields.category && out.category) upd.category_en = out.category;
+      if (!force) {
+        delete upd.en_verified;
+        // 원문이 비어 있는 칸만 ''로 표시해 다음 조회에서 빠지게 한다
+        if (!p.content_en && !(p.content_ko || '').trim()) upd.content_en = '';
+        if (!p.excerpt_en && !(p.excerpt_ko || '').trim()) upd.excerpt_en = '';
+        if (!Object.keys(upd).length) { errors.push('post ' + p.id + ': empty translation'); continue; }
+      }
       const { error } = await sb.from('posts').update(upd).eq('id', p.id);
       if (error) errors.push('post ' + p.id + ': ' + error.message); else done++;
     }

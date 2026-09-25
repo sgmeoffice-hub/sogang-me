@@ -26,12 +26,12 @@ export async function getHomeData() {
     safe<any>(() => sb.from('site_settings').select('value').eq('key', 'home').maybeSingle() as any, null),
     safe<Post[]>(() => sb.from('posts').select('id,board,title_ko,title_en,excerpt_ko,excerpt_en,thumbnail_url,attachments,created_at').eq('board', 'promo').eq('published', true).order('sort_order').order('created_at', { ascending: false }).limit(2) as any, []),
     safe<Post[]>(() => sb.from('posts').select('id,board,title_ko,title_en,excerpt_ko,excerpt_en,thumbnail_url,video_url,category,category_en,sort_order,created_at').eq('board', 'videos').eq('published', true).order('sort_order').limit(4) as any, []),
-    // 히어로 '최신 소식' 위젯(2026-09-22 학과장 요청) — 큐레이션 모음(promo·videos)을 뺀 전 게시판 최신 3건. 관리자 '메인 페이지에 노출'(show_on_home) 존중.
+    // 히어로 '최신 소식' 위젯(2026-09-22 학과장 요청) — 큐레이션 모음(promo·videos)을 뺀 전 게시판 최신 5건. 관리자 '메인 페이지에 노출'(show_on_home) 존중.
     // 고정글(is_pinned)은 일부러 우선 정렬하지 않는다(오래된 고정 공지 3건이 위젯을 영구 점유하면 '업데이트' 목적이 사라짐) — 칩 표시에만 쓴다.
     // id desc는 자정 시각만 있는 legacy 글 동률 tie-break (getAdjacent와 같은 규칙).
     safe<Post[]>(() => sb.from('posts').select('id,board,title_ko,title_en,created_at,is_pinned')
       .eq('published', true).eq('show_on_home', true).not('board', 'in', `(${heroNewsExclude.join(',')})`)
-      .order('created_at', { ascending: false }).order('id', { ascending: false }).limit(3) as any, []),
+      .order('created_at', { ascending: false }).order('id', { ascending: false }).limit(5) as any, []), // 3→5건 (2026-09-25 책임자 요청)
   ]);
   const n = settings?.value?.news_count ?? 8;
   const groups: Record<string, Post[]> = Object.fromEntries(homeBoards.map((b, i) => [b, (postsByBoard[i] || []).slice(0, n)]));

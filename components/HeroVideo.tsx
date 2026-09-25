@@ -28,9 +28,9 @@ function HeroNewsRows({ locale, items }: { locale: Locale; items: HeroNewsItem[]
         const d = fmtDate(p.created_at); // 2026.09.22 (legacy 글 UTC 날짜 규칙은 fmtDate 주석 참조)
         return (
           <li key={p.id}>
-            {/* prefetch={false}: 첫 화면에 보이는 링크라 홈 진입마다 글 3건 RSC 프리페치(엣지 요청 +3)가 나가는 것을 막는다 — 클릭 시 내비게이션은 그대로 */}
+            {/* prefetch={false}: 첫 화면에 보이는 링크라 홈 진입마다 글 5건 RSC 프리페치(엣지 요청 +3)가 나가는 것을 막는다 — 클릭 시 내비게이션은 그대로 */}
             <Link href={`/${locale}/board/${p.board}/${p.id}`} prefetch={false}
-              className="group flex flex-col gap-1.5 px-4 py-3 transition-colors hover:bg-white/5 focus-visible:bg-white/10 focus-visible:outline-white focus-visible:outline-offset-[-3px]">
+              className="group flex flex-col gap-1 px-4 py-2.5 transition-colors hover:bg-white/5 focus-visible:bg-white/10 focus-visible:outline-white focus-visible:outline-offset-[-3px]">
               {/* 제목 먼저(스크린리더도 제목부터 읽음). 고정글 칩은 제목 앞 인라인 → "중요, 제목" 순.
                   `block`을 붙이면 line-clamp의 display:-webkit-box를 덮어써 말줄임이 풀리므로 넣지 않는다 */}
               <span className="text-[14px] font-semibold leading-snug text-white/90 break-keep line-clamp-2 group-hover:text-white">
@@ -74,8 +74,8 @@ function HeroNews({ locale, items, allHref }: { locale: Locale; items: HeroNewsI
         <HeroNewsRows locale={locale} items={items} />
       </aside>
 
-      {/* 모바일·태블릿 시트: 접힌 48px 한 줄(최신 1건 제목) → 탭하면 3건. 폰 GPU 부담을 피해 blur 없이 단색 */}
-      {/* 처음부터 펼친 상태(open) — 책임자 요청(2026-09-22): 모바일에서도 3건이 바로 보이게. 접기는 여전히 가능 */}
+      {/* 모바일·태블릿 시트: 접힌 48px 한 줄(최신 1건 제목) → 탭하면 5건. 폰 GPU 부담을 피해 blur 없이 단색 */}
+      {/* 처음부터 펼친 상태(open) — 책임자 요청(2026-09-22): 모바일에서도 전부 바로 보이게. 접기는 여전히 가능 */}
       <details open className={`${bp.sheet} group mt-6 max-w-2xl rise rise-4 motion-reduce:!animate-none border border-white/15 bg-black/75`}>
         <summary className="flex min-h-[48px] cursor-pointer select-none list-none items-center gap-3 px-4 text-[15px] focus-visible:outline-white focus-visible:outline-offset-[-3px] [&::-webkit-details-marker]:hidden">
           <span className="flex shrink-0 items-center gap-2 font-brand leading-none">{head}</span>
