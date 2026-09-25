@@ -37,7 +37,11 @@ function buildUnit(seg: string[]): Unit | null {
       if (closing) {
         let j = -1; for (let k = stack.length - 1; k >= 0; k--) if (stack[k][0] === name) { j = k; break; }
         if (j < 0) items.push(['solo', idx]);
-        else { const openIdx = stack[j][2]; stack.splice(j); items.push(['close', openIdx, idx]); }
+        else {
+          // 바깥 태그가 먼저 닫히면(<a><font>…</a> 같은 옛 HTML) 안쪽의 닫히지 않은 여는 태그는 단독 표지로 바꾼다
+          for (const [, pos, innerIdx] of stack.slice(j + 1)) items[pos] = ['solo', innerIdx];
+          const openIdx = stack[j][2]; stack.splice(j); items.push(['close', openIdx, idx]);
+        }
       } else if (self) items.push(['solo', idx]);
       else { items.push(['open', idx]); stack.push([name || '', items.length - 1, idx]); }
     } else items.push(['text', t]);
@@ -87,7 +91,14 @@ export function segmentHtml(html: string): (string | Unit)[] {
 const markList = (s: string) => Array.from(s.matchAll(MARK), (m) => m[0]).sort().join(',');
 /** 번역문을 원래 태그로 되돌린다. 표지가 어긋나면(번역기가 지우거나 바꿈) 인라인 서식만 포기하고 글은 살린다. */
 export function renderUnit(u: Unit, translated: string): string {
-  const t = markList(translated) === markList(u.text) ? translated : translated.replace(MARK, '');
+  if (markList(translated) !== markList(u.text)) {
+    // 표지가 어긋나면 태그는 모두 살리되(순서대로 앞에 열고 뒤에 닫음) 서식 위치만 포기한다 — 태그를 빼먹어 HTML 구조가 깨지지 않게
+    const ns = Object.keys(u.map).map(Number).sort((a, b) => a - b);
+    const open = ns.map((n) => u.map[n][0]).join('');
+    const close = ns.slice().reverse().map((n) => u.map[n][1] || '').join('');
+    return u.pre + open + esc(translated.replace(MARK, '')) + close + u.suf;
+  }
+  const t = translated;
   let out = ''; let pos = 0;
   for (const m of t.matchAll(MARK)) {
     out += esc(t.slice(pos, m.index)); pos = (m.index || 0) + m[0].length;
