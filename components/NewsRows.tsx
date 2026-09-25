@@ -77,7 +77,7 @@ function Row({ locale, board, posts, variant }: { locale: Locale; board: string;
         <div ref={ref} className="flex gap-5 overflow-x-auto snap-x snap-mandatory no-scrollbar -mx-5 px-5 md:mx-0 md:px-0">
           {posts.map((p, i) => {
             const img = p.thumbnail_url || (p.images && p.images[0]?.url);
-            const cover = img || youtubeThumb(p.video_url) || coverFor(board, p.title_ko, p.id);
+            const cover = img || youtubeThumb(p.video_url) || coverFor(board, t(p, 'title', locale), p.id);
             return (
               <Link key={p.id} data-card href={`/${locale}/board/${board}/${p.id}`} className="card group snap-start shrink-0 w-[78vw] sm:w-[calc(50%-10px)] lg:w-[calc(25%-15px)] flex flex-col overflow-hidden">
                 {variant === 'image' ? (

@@ -17,7 +17,7 @@ export default function PostCard({ post, locale }: { post: Post; locale: Locale 
   return (
     <Link href={`/${locale}/board/${post.board}/${post.id}`} className="card group flex flex-col overflow-hidden">
       <div className="aspect-[16/10] bg-sg-mist relative overflow-hidden">
-        <img src={post.thumbnail_url || post.images?.[0]?.url || youtubeThumb(post.video_url) || coverFor(post.board, post.title_ko, post.id)} alt="" loading="lazy" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.04]" />
+        <img src={post.thumbnail_url || post.images?.[0]?.url || youtubeThumb(post.video_url) || coverFor(post.board, t(post, 'title', locale), post.id)} alt="" loading="lazy" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.04]" />
         <span className="absolute left-3 top-3 bg-sg-cardinal text-white text-[11px] font-bold px-2 py-1">{tag}</span>
       </div>
       <div className="p-5 flex flex-col gap-2 flex-1">

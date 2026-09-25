@@ -22,7 +22,7 @@ export function PromoView({ posts, locale }: { posts: Post[]; locale: Locale }) 
     <div className="grid gap-6 md:grid-cols-2">
       {posts.map((p) => { const file = (p.attachments || [])[0]; return (
         <article key={p.id} className="card flex flex-col md:flex-row overflow-hidden">
-          <Link href={`/${locale}/board/promo/${p.id}`} className="md:w-[46%] aspect-[4/3] md:aspect-auto bg-sg-mist shrink-0 overflow-hidden"><img src={p.thumbnail_url || coverFor('research', p.title_ko, p.id)} alt="" className="w-full h-full object-cover" /></Link>
+          <Link href={`/${locale}/board/promo/${p.id}`} className="md:w-[46%] aspect-[4/3] md:aspect-auto bg-sg-mist shrink-0 overflow-hidden"><img src={p.thumbnail_url || coverFor('research', t(p, 'title', locale), p.id)} alt="" className="w-full h-full object-cover" /></Link>
           <div className="p-6 flex flex-col">
             <h3 className="text-[19px] font-bold leading-snug"><Link href={`/${locale}/board/promo/${p.id}`} className="hover:text-sg-cardinal">{t(p, 'title', locale)}</Link></h3>
             <p className="mt-2 text-[14px] text-sg-gray11 leading-relaxed line-clamp-4">{t(p, 'excerpt', locale)}</p>
@@ -134,7 +134,7 @@ export function VideosView({ posts, locale }: { posts: Post[]; locale: Locale })
             {items.map((p) => (
               <Link key={p.id} href={`/${locale}/board/videos/${p.id}`} className="card group flex flex-col overflow-hidden">
                 <div className="relative aspect-video bg-sg-ink overflow-hidden">
-                  <img src={youtubeThumb(p.video_url) || p.thumbnail_url || coverFor('notice', p.title_ko, p.id)} alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+                  <img src={youtubeThumb(p.video_url) || p.thumbnail_url || coverFor('notice', t(p, 'title', locale), p.id)} alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
                   <span className="absolute inset-0 grid place-items-center"><span className="w-14 h-14 rounded-full bg-sg-cardinal/90 grid place-items-center text-white text-xl pl-1 shadow-lg">▶</span></span>
                 </div>
                 <div className="p-4"><h3 className="font-bold text-[15px] leading-snug group-hover:text-sg-cardinal line-clamp-2">{t(p, 'title', locale)}</h3><p className="mt-2 text-[13px] text-sg-gray11 line-clamp-2">{t(p, 'excerpt', locale)}</p></div>
