@@ -82,5 +82,5 @@ export default function PostForm({ post, defaultBoard }: { post?: any; defaultBo
 }
 
 export function DeletePostButton({ id, board }: { id: number; board: string }) {
-  return <form action={deletePost} onSubmit={(e) => { if (!confirm('이 게시글을 삭제할까요?')) e.preventDefault(); }}><input type="hidden" name="id" value={id} /><input type="hidden" name="board" value={board} /><button className="text-[13px] text-sg-red underline">게시글 삭제</button></form>;
+  return <form action={deletePost} onSubmit={(e) => { if (!confirm('이 게시글을 삭제할까요? 30일 동안 휴지통(관리자 › 백업·휴지통)에 보관되어 복구할 수 있습니다.')) e.preventDefault(); }}><input type="hidden" name="id" value={id} /><input type="hidden" name="board" value={board} /><button className="text-[13px] text-sg-red underline">게시글 삭제</button></form>;
 }

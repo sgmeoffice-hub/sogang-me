@@ -2,12 +2,22 @@
 
 마지막 갱신: 2026-09-25
 
+## 완료 (2026-09-25) — 백업 기능 (자동 백업·휴지통·수정 이력) — R2 설정 대기
+- **휴지통(동작 중)**: 관리자에서 글을 삭제하면 행 전체를 Supabase 비공개 저장소 `vault`의 `trash/posts/<id>.json`에 보관하고, 첨부·본문 파일은 지우지 않는다. 관리자 › 백업·휴지통에서 **복구**(같은 번호로 되살림)·**영구 삭제**. 30일 지나면 매일 백업 작업이 파일까지 정리(다른 글이 쓰는 파일은 남김, `lib/media.ts removeOwnMedia`).
+- **수정 이력(동작 중)**: 글을 저장할 때마다 직전 행 전체를 `vault/history/posts/<id>/<시각>.json`에 보관(글마다 최근 20개·90일). 글 수정 화면 맨 아래 ‘수정 이력’에서 **이 버전으로 되돌리기**(지금 내용도 이력에 남긴 뒤 되돌림).
+- **자동 백업(R2 환경변수 입력 후 켜짐)**: `/api/cron/backup` 매일 04:00 KST(vercel.json). `lib/backup.ts`·`lib/r2.ts`(aws4fetch, S3 서명). R2 버킷 `R2_BACKUP_BUCKET`에 `db/daily/YYYY-MM-DD.json.gz`(DB 표 8개 전체, 압축 약 2MB, 전날과 같으면 저장 생략, 30일) + `db/monthly/YYYY-MM.json.gz`(12개월) + `files/media/…`(Supabase 업로드 파일, 새 것만) + `files/r2/…`(옛 홈페이지 R2 공개 버킷 `R2_MEDIA_BUCKET`=sogang-me-media 서버 간 복사, 8개 동시·실행당 최대 4분, 끝날 때까지 매일 이어서). 상태는 `site_settings` key `backup`. 관리자 대시보드에 이틀 넘게 성공 없으면 경고, 백업 화면에 '지금 백업'·내려받기(관리자만, 5분 서명 주소 `/api/admin/backup/download`). Supabase 전송량: 전체 덤프가 압축 전송 1.2MB → 월 36MB.
+  - **필요한 설정(책임자)**: Cloudflare R2 버킷 `sogang-me-backup`(비공개) + API 토큰(Object Read & Write, 대상 sogang-me-backup·sogang-me-media) → Vercel 환경변수 `R2_ACCOUNT_ID`·`R2_ACCESS_KEY_ID`·`R2_SECRET_ACCESS_KEY`·`R2_BACKUP_BUCKET`(=sogang-me-backup) → 재배포. 이 컨테이너의 AWS_* 키는 R2 키가 아님(길이 14).
+  - **설정 후 할 일(다음 세션)**: 관리자 세션으로 '지금 백업' 실행 → 백업 화면에 성공·크기 표시, `db/daily` 파일 내려받아 `gunzip` 확인. R2 요청 코드(`lib/r2.ts`)는 실제 R2로 아직 시험하지 못했다.
+- **복원**: 사이트 전체 되돌리기는 버튼 없음(실수 방지). `node scripts/restore-backup.mjs <파일.json.gz> [--table posts --id 123] [--apply]` — 기본은 미리보기, upsert로 반영, 끝나면 `/api/admin/revalidate`.
+- **같이 고친 것**: 파비콘이 없어 `/favicon.ico` 요청이 `[locale]` 홈 경로로 들어가 매번 500 오류 → 학교 방패 문장으로 `app/favicon.ico`·`icon.png`·`apple-icon.png` 추가, 홈 페이지에 언어 아닌 주소는 404 처리.
+- 로컬 E2E(관리자 세션, 비공개 시험 글): 저장→수정 이력 1건→되돌리기→삭제→휴지통 표시→복구→재삭제→영구 삭제→대시보드 알림 모두 통과, 시험 글·이력은 정리함.
+
 ## 완료 (2026-09-25) — Supabase 전송량(Egress) 절감: 페이지·조회 캐시가 거의 안 되던 문제
 - **발견**: Supabase 무료 플랜 사용량(8/26~9/26) Egress 3.33/5GB(67%). 라이브 응답 헤더를 보니 홈·사이트맵만 캐시(HIT)되고 게시판 목록·게시글 상세·교수 상세·학과소개 등 나머지는 전부 `private, no-store`(MISS) — 방문·크롤러 요청마다 서버가 DB를 다시 읽고 있었다(지난 Vercel 한도 초과에도 기여했을 것).
   - 원인 ① 동적 경로(`[slug]`, `[id]`) 페이지에 `generateStaticParams`가 없으면 Next 14는 `revalidate`가 있어도 매 요청 새로 그린다(빌드 표시 ƒ) ② `searchParams`를 읽는 페이지(게시판 목록 ?page·?q, 예약 ?f·y·m, 교수진 ?field)는 구조상 매 요청 렌더링.
 - **조치**: ① 동적 경로 8곳에 `export function generateStaticParams() { return []; }` → 첫 요청 때 만들어 캐시(ISR, 빌드 표시 ●). 로컬 확인: 첫 요청 MISS → 이후 HIT ② 목록·예약·교수 조회 결과를 `unstable_cache`(태그 `site`)로 캐시(`lib/data.ts` getPosts 10분·getFaculty 1시간·getReservations 1시간, `lib/names.ts` facultyNames 1시간) ③ 저장 시 갱신을 `refreshSite()`(`lib/refresh.ts` = `revalidatePath('/', 'layout')` + `revalidateTag('site')`)로 통일 — 관리자 저장·자동 번역·`/api/admin/revalidate` 모두. 예약 신청(`/api/reservations`)은 `revalidateTag('reservations')`+예약 페이지만 갱신 ④ 주기: 게시글 상세 1시간→1일, 홈 10분→1시간, 게시판 목록 1분→10분(목록 조회수만 최대 10분 지연), 예약 30초→1시간(신청·처리 시 즉시 갱신), 사이트맵 1시간→1일 ⑤ 게시글 상세는 보는 언어 본문만 조회(평균 5.8KB→3.2KB).
 - **주의(앞으로)**: 새 동적 경로 페이지를 만들면 `generateStaticParams`를 꼭 넣을 것. 라이브 확인은 `curl -sI URL | grep -i x-vercel-cache`(HIT/STALE이어야 정상, MISS가 계속이면 캐시 안 됨). DB를 REST로 일괄 수정한 뒤에는 `/api/admin/revalidate` 호출.
-- **백업(보류, 다음 작업)**: 책임자와 설계 합의 — Cloudflare R2 비공개 버킷 `sogang-me-backup`에 매일 DB(원본 5~13MB, 압축 2.2MB) 보관(최근 30일 매일 + 12개월 월별 ≈ 90MB), 매일은 바뀐 것만·주 1회 전체(Supabase 전송량 월 ~60MB), 관리자 업로드 파일은 새 파일만 증분, 옛 R2 파일(게시글이 쓰는 3,229개 1.28GB)은 1회 서버 간 복사, 휴지통(삭제 30일 보관·복구)·수정 이력. 필요: 책임자가 R2 버킷·토큰 생성 후 Vercel 환경변수 `R2_ACCOUNT_ID`·`R2_ACCESS_KEY_ID`·`R2_SECRET_ACCESS_KEY`·`R2_BACKUP_BUCKET` 입력.
+- **백업(→ 아래 '백업 기능' 항목에서 구현)**: 책임자와 설계 합의 — Cloudflare R2 비공개 버킷 `sogang-me-backup`에 매일 DB(원본 5~13MB, 압축 2.2MB) 보관(최근 30일 매일 + 12개월 월별 ≈ 90MB), 매일은 바뀐 것만·주 1회 전체(Supabase 전송량 월 ~60MB), 관리자 업로드 파일은 새 파일만 증분, 옛 R2 파일(게시글이 쓰는 3,229개 1.28GB)은 1회 서버 간 복사, 휴지통(삭제 30일 보관·복구)·수정 이력. 필요: 책임자가 R2 버킷·토큰 생성 후 Vercel 환경변수 `R2_ACCOUNT_ID`·`R2_ACCESS_KEY_ID`·`R2_SECRET_ACCESS_KEY`·`R2_BACKUP_BUCKET` 입력.
 
 ## 완료 (2026-09-25) — 사이트 전체 glitch 점검·수정 (책임자: "곳곳에 glitch 있을 것 같은데 홈페이지 쫙 훑으면서 전부 수정", "관리자 페이지도")
 - **점검 방법**: 공개 페이지 국/영 264쪽 크롤링(상태 코드·영문 페이지 한글·undefined/NaN 노출·깨진 링크/이미지) → Playwright로 390/1024/1280px 넘침·콘솔 오류 → 표·긴 URL·고정 폭이 있는 게시글 1,012쪽 전수 + 무작위 300쪽 → 관리자 전 메뉴·대표 편집 화면(국/영 게시판 14종, 교수진, 페이지, 예약, URECA, 배너, 설정) 1280/390 + 스크린샷 검토 → 컴파일된 CSS에 없는 Tailwind 클래스 전수 대조.

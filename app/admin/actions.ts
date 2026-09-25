@@ -10,6 +10,9 @@ import { buildingOf } from '@/lib/buildings';
 import { facilities } from '@/lib/nav';
 import { isHalfHour, isDateStr, repeatDates, REPEAT_MAX, type Repeat } from '@/lib/reservation';
 import { refreshSite } from '@/lib/refresh';
+import { mediaPaths, removeOwnMedia } from '@/lib/media';
+import { serviceClient, trashPost, getTrashed, removeTrashed, saveVersion, getVersion } from '@/lib/vault';
+import { runBackup } from '@/lib/backup';
 
 import { adminBase as base } from '@/lib/admin';
 
@@ -21,13 +24,10 @@ async function admin() {
   if (!ok) throw new Error('forbidden');
   return sb;
 }
+async function who(sb: any) { const { data: { user } } = await sb.auth.getUser(); return user?.email || undefined; }
 const bool = (fd: FormData, k: string) => fd.get(k) === 'on' || fd.get(k) === 'true';
 const str = (fd: FormData, k: string) => (fd.get(k) as string | null)?.toString() ?? '';
 const nul = (s: string) => (s.trim() ? s : null);
-/** Storage의 media 버킷에 있는 파일이면 경로만 뽑아 삭제합니다. */
-function mediaPaths(urls: string[]) {
-  return urls.map((u) => { const m = (u || '').match(/\/storage\/v1\/object\/public\/media\/(.+)$/); return m ? decodeURIComponent(m[1]) : null; }).filter(Boolean) as string[];
-}
 async function removeMedia(sb: any, row: any) {
   const urls = [row?.thumbnail_url, ...(row?.images || []).map((i: any) => i.url), ...(row?.attachments || []).map((f: any) => f.url)].filter(Boolean);
   const inBody = [...String(row?.content_ko || '' ).matchAll(/src="([^"]+)"/g), ...String(row?.content_en || '').matchAll(/src="([^"]+)"/g)].map((m) => m[1]);
@@ -62,6 +62,11 @@ export async function savePost(fd: FormData) {
 
   let prev: any = null;
   if (id) { const { data } = await sb.from('posts').select('title_ko,content_ko,excerpt_ko,category,title_en,content_en,excerpt_en,category_en,created_at,thumbnail_url').eq('id', Number(id)).single(); prev = data; }
+  // 수정 이력: 저장 직전 내용을 보관(글마다 최근 20개·90일). 보관이 실패해도 저장은 막지 않는다
+  if (id) {
+    const { data: full } = await sb.from('posts').select('*').eq('id', Number(id)).single();
+    if (full) await saveVersion(serviceClient(), full, await who(sb)).catch((e) => console.error('history', e?.message));
+  }
 
   /* 썸네일 자동 채움 (2026-09-17): 썸네일 칸을 따로 올리지 않고 본문에만 사진을 넣은 글의 카드가 기본 표지로 나오던 문제.
    *  - 썸네일이 비어 있으면 본문(국문→영문) 첫 사진을 쓴다.
@@ -119,31 +124,51 @@ export async function savePost(fd: FormData) {
   redirect(`${base()}/posts?board=${row.board}`);
 }
 
-/** 이 URL을 다른 게시글도 쓰고 있으면 true — 공유 파일은 저장소에서 지우면 안 된다. */
-async function usedByOtherPost(sb: any, url: string, excludeId: number): Promise<boolean> {
-  const safeUrl = url.replace(/[",]/g, ''); // or() 필터 구문을 깨는 문자는 실사용 URL에 없다
-  const { data: a } = await sb.from('posts').select('id').neq('id', excludeId)
-    .or(`thumbnail_url.eq."${safeUrl}",content_ko.ilike."%${safeUrl}%",content_en.ilike."%${safeUrl}%"`).limit(1);
-  if (a && a.length) return true;
-  const { data: b } = await sb.from('posts').select('id').neq('id', excludeId).contains('images', [{ url }]).limit(1);
-  if (b && b.length) return true;
-  const { data: c } = await sb.from('posts').select('id').neq('id', excludeId).contains('attachments', [{ url }]).limit(1);
-  return !!(c && c.length);
-}
-
+/** 글 삭제 = 휴지통으로(30일 보관 후 자동 영구 삭제). 첨부·본문 파일도 그동안 지우지 않아 그대로 복구된다(2026-09-25). */
 export async function deletePost(fd: FormData) {
   const sb = await admin(); const id = Number(str(fd, 'id')); const board = str(fd, 'board');
-  const { data: row } = await sb.from('posts').select('thumbnail_url,images,attachments,content_ko,content_en').eq('id', id).single();
-  if (row) {
-    // 글을 지우면 첨부·본문 이미지도 저장소에서 함께 삭제 — 단, 다른 글이 같은 파일을 참조하면 남긴다
-    const urls = [row.thumbnail_url, ...(row.images || []).map((i: any) => i.url), ...(row.attachments || []).map((f: any) => f.url),
-      ...[...String(row.content_ko || '').matchAll(/src="([^"]+)"/g), ...String(row.content_en || '').matchAll(/src="([^"]+)"/g)].map((m) => m[1])].filter(Boolean);
-    const own: string[] = [];
-    for (const u of Array.from(new Set(urls))) if (!(await usedByOtherPost(sb, u, id))) own.push(u);
-    const paths = mediaPaths(own);
-    if (paths.length) await sb.storage.from('media').remove(paths);
-  }
+  const { data: row } = await sb.from('posts').select('*').eq('id', id).single();
+  if (row) await trashPost(serviceClient(), row, await who(sb));
   await sb.from('posts').delete().eq('id', id); refreshSite(); redirect(`${base()}/posts?board=${board}`);
+}
+
+/** 휴지통에서 복구 — 같은 번호로 되살린다 */
+export async function restorePost(fd: FormData) {
+  await admin(); const id = Number(str(fd, 'id'));
+  const svc = serviceClient(); const t = await getTrashed(svc, id);
+  if (!t?.row) throw new Error('휴지통에서 글을 찾을 수 없습니다');
+  const { data: exists } = await svc.from('posts').select('id').eq('id', id).maybeSingle();
+  if (exists) throw new Error(`#${id} 글이 이미 있습니다`);
+  const { error } = await svc.from('posts').insert(t.row); if (error) throw new Error(error.message);
+  await removeTrashed(svc, id); refreshSite(); redirect(`${base()}/posts/${id}`);
+}
+
+/** 휴지통에서 영구 삭제(파일 포함, 다른 글이 쓰는 파일은 남김) */
+export async function purgePost(fd: FormData) {
+  await admin(); const id = Number(str(fd, 'id'));
+  const svc = serviceClient(); const t = await getTrashed(svc, id);
+  if (t?.row) await removeOwnMedia(svc, t.row);
+  await removeTrashed(svc, id); redirect(`${base()}/backup`);
+}
+
+/** 수정 이력의 한 버전으로 되돌리기 — 지금 내용도 이력에 남긴 뒤 되돌린다 */
+export async function restoreVersion(fd: FormData) {
+  const sb = await admin(); const id = Number(str(fd, 'id')); const name = str(fd, 'name');
+  const svc = serviceClient(); const v = await getVersion(svc, id, name);
+  if (!v?.row) throw new Error('이전 버전을 찾을 수 없습니다');
+  const { data: cur } = await svc.from('posts').select('*').eq('id', id).single();
+  if (cur) await saveVersion(svc, cur, await who(sb));
+  const { id: _i, created_at: _c, view_count: _v, ...fields } = v.row;
+  const { error } = await svc.from('posts').update({ ...fields, updated_at: new Date().toISOString() }).eq('id', id);
+  if (error) throw new Error(error.message);
+  refreshSite(); redirect(`${base()}/posts/${id}?restored=1`);
+}
+
+/** 관리자 화면 '지금 백업' */
+export async function backupNow() {
+  await admin();
+  await runBackup(serviceClient(), 'manual');
+  redirect(`${base()}/backup`);
 }
 
 export async function saveFaculty(fd: FormData) {

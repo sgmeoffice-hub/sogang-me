@@ -1,5 +1,12 @@
 {
   "crons": [
-    { "path": "/api/cron/translate", "schedule": "0 18 * * *" }
+    {
+      "path": "/api/cron/translate",
+      "schedule": "0 18 * * *"
+    },
+    {
+      "path": "/api/cron/backup",
+      "schedule": "0 19 * * *"
+    }
   ]
 }

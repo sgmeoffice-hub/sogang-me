@@ -1,10 +1,11 @@
+import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import HeroVideo from '@/components/HeroVideo';
 import NewsRows from '@/components/NewsRows';
 import Reveal from '@/components/Reveal';
 import { emblemOf } from '@/components/FieldEmblems';
 import { getHomeData, getLabCount } from '@/lib/data';
-import { T, t, type Locale } from '@/lib/i18n';
+import { T, t, isLocale, type Locale } from '@/lib/i18n';
 import { areas } from '@/content/areas';
 import { assets, heroFieldVideos } from '@/content/assets';
 import { youtubeThumb } from '@/lib/html';
@@ -12,6 +13,7 @@ import { youtubeThumb } from '@/lib/html';
 export const revalidate = 3600; // 관리자 저장 시 즉시 갱신되므로 길게(10분 → 1시간, 2026-09-25 전송량 절감)
 
 export default async function Home({ params }: { params: { locale: Locale } }) {
+  if (!isLocale(params.locale)) notFound();   // /favicon.ico 등 언어가 아닌 한 단계 주소가 여기로 오면 500 대신 404(2026-09-25)
   const l = params.locale; const ko = l === 'ko';
   const [{ groups, gallery, banners, settings, promo, videos, latest }, labCount] = await Promise.all([getHomeData(), getLabCount()]);
   const sections: string[] = settings.sections || ['hero', 'promo', 'intro', 'news', 'videos', 'programs', 'quicklinks', 'gallery'];
