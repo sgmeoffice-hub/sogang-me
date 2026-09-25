@@ -19,7 +19,7 @@ const MONTHLY_KEEP = 12;
 export type BackupStatus = {
   at: string; ok: boolean; error?: string; trigger?: string;
   key?: string; bytes?: number; unchanged?: boolean; counts?: Record<string, number>;
-  mediaCopied?: number; legacyCopied?: number; legacyRemaining?: number | null; purged?: { trash: number; history: number };
+  mediaCopied?: number; legacyCopied?: number; legacyTotal?: number; legacyAfter?: string; legacyDone?: boolean; stage?: string; purged?: { trash: number; history: number };
   lastSuccessAt?: string; hash?: string;
 };
 
@@ -55,68 +55,76 @@ async function listMedia(sb: SupabaseClient, prefix = ''): Promise<string[]> {
   return out;
 }
 
-export async function runBackup(sb: SupabaseClient, trigger = 'cron', budgetMs = 240_000): Promise<BackupStatus> {
+export async function runBackup(sb: SupabaseClient, trigger = 'cron', budgetMs = 200_000): Promise<BackupStatus> {
   const started = Date.now();
+  const left = () => budgetMs - (Date.now() - started);
   // R2 설정 전에는 시도하지 않고 기록도 남기지 않는다(관리자 화면은 '설정 필요'로 안내)
   if (!r2Enabled()) return { at: new Date().toISOString(), ok: false, trigger, error: 'R2 환경변수가 아직 설정되지 않았습니다' };
   const prev = await readStatus(sb);
   const now = new Date(Date.now() + 9 * 3600e3);   // KST 날짜 기준
   const day = now.toISOString().slice(0, 10), month = day.slice(0, 7);
-  const status: BackupStatus = { at: new Date().toISOString(), ok: false, trigger, lastSuccessAt: prev?.lastSuccessAt, hash: prev?.hash };
+  const status: BackupStatus = { at: new Date().toISOString(), ok: false, trigger, stage: 'start', lastSuccessAt: prev?.lastSuccessAt, hash: prev?.hash, legacyAfter: prev?.legacyAfter, legacyDone: prev?.legacyDone, legacyTotal: prev?.legacyTotal };
+  // 단계마다 기록 — 도중에 시간 제한으로 끊겨도 어디까지 됐는지 남는다
+  const checkpoint = async (stage: string) => { status.stage = stage; await writeStatus(sb, status).catch(() => {}); };
   try {
-
-    // 1) DB 전체
+    // 1) DB 전체 — 가장 중요하므로 먼저, 끝나면 바로 '성공'으로 기록
     const tables: Record<string, any[]> = {}; const counts: Record<string, number> = {};
     for (const t of TABLES) { tables[t] = await dumpTable(sb, t); counts[t] = tables[t].length; }
     const body = JSON.stringify({ site: 'me.sogang.ac.kr', createdAt: status.at, tables });
     const hash = createHash('sha256').update(JSON.stringify({ ...tables, site_settings: tables.site_settings.filter((r: any) => r.key !== 'backup') })).digest('hex');   // 백업 상태 행은 매번 바뀌므로 비교에서 뺀다
     const gz = gzipSync(body);
-    const monthly = await r2List(`db/monthly/${month}`);
-    const needMonthly = monthly.length === 0;
-    status.counts = counts; status.bytes = gz.length; status.hash = hash;
-    if (hash === prev?.hash && !needMonthly) {
-      status.unchanged = true;   // 전날과 같으면 새로 저장하지 않는다(용량 절약)
-    } else {
+    const needMonthly = (await r2List(`db/monthly/${month}`)).length === 0;
+    status.counts = counts; status.bytes = gz.length;
+    if (hash === prev?.hash && !needMonthly) status.unchanged = true;   // 전날과 같으면 새로 저장하지 않는다(용량 절약)
+    else {
       status.key = `db/daily/${day}.json.gz`;
       await r2Put(status.key, gz, 'application/gzip');
       if (needMonthly) await r2Put(`db/monthly/${month}.json.gz`, gz, 'application/gzip');
     }
+    status.hash = hash; status.ok = true; status.lastSuccessAt = status.at;
+    await checkpoint('db');
 
     // 2) 보관 기간 정리
-    const daily = (await r2List('db/daily/')).sort((a, b) => b.key.localeCompare(a.key));
+    const daily = (await r2List('db/daily/')).sort((x, y) => y.key.localeCompare(x.key));
     for (const o of daily.slice(DAILY_KEEP)) await r2Delete(o.key);
-    const months = (await r2List('db/monthly/')).sort((a, b) => b.key.localeCompare(a.key));
+    const months = (await r2List('db/monthly/')).sort((x, y) => y.key.localeCompare(x.key));
     for (const o of months.slice(MONTHLY_KEEP)) await r2Delete(o.key);
 
     // 3) 관리자가 올린 파일 — 백업에 없는 것만 추가(지워진 파일도 백업에는 남겨 둔다)
     const have = new Set((await r2List('files/media/')).map((o) => o.key));
     let mediaCopied = 0;
     for (const p of await listMedia(sb)) {
-      if (Date.now() - started > budgetMs) break;
+      if (left() < 30_000) break;
       const key = `files/media/${p}`; if (have.has(key)) continue;
       const { data } = await sb.storage.from('media').download(p);
       if (!data) continue;
       await r2Put(key, new Uint8Array(await data.arrayBuffer()), data.type || 'application/octet-stream'); mediaCopied++;
     }
     status.mediaCopied = mediaCopied;
+    await checkpoint('media');
 
-    // 4) 옛 홈페이지 파일(R2 공개 버킷) — 서버 간 복사, 남은 시간만큼 이어서. 토큰에 공개 버킷 읽기 권한이 없으면 건너뛴다
-    try {
-      if (Date.now() - started < budgetMs) {
-        const src = await r2List('', mediaBucket());
-        const done = new Set((await r2List('files/r2/')).map((o) => o.key.slice('files/r2/'.length)));
-        const todo = src.filter((o) => !done.has(o.key));
-        let n = 0, i = 0;   // 8개씩 동시에 서버 간 복사
-        await Promise.all(Array.from({ length: 8 }, async () => {
-          while (i < todo.length && Date.now() - started < budgetMs) { const o = todo[i++]; await r2Copy(mediaBucket(), o.key, `files/r2/${o.key}`); n++; }
-        }));
-        status.legacyCopied = n; status.legacyRemaining = todo.length - n;
-      }
-    } catch (e: any) { status.legacyRemaining = null; status.error = `옛 파일 복사 건너뜀: ${e?.message || e}`; }
-
-    status.ok = true; status.lastSuccessAt = status.at;
+    // 4) 옛 홈페이지 파일(R2 공개 버킷) — 서버 간 복사. 키 순서대로 1,000개씩 읽어 복사하고 마지막 키(legacyAfter)를 기록해 다음 실행에서 이어 간다
+    if (!status.legacyDone) {
+      try {
+        let copied = 0;
+        while (left() > 20_000) {
+          const batch = await r2List('', mediaBucket(), 1000, status.legacyAfter || '');
+          if (!batch.length) { status.legacyDone = true; break; }
+          for (let i = 0; i < batch.length && left() > 15_000; i += 8) {
+            const chunk = batch.slice(i, i + 8);
+            await Promise.all(chunk.map((o) => r2Copy(mediaBucket(), o.key, `files/r2/${o.key}`)));
+            copied += chunk.length; status.legacyAfter = chunk[chunk.length - 1].key;
+          }
+          status.legacyCopied = copied; status.legacyTotal = (prev?.legacyTotal || 0) + copied;
+          await checkpoint('legacy');
+          if (batch.length < 1000 && status.legacyAfter === batch[batch.length - 1].key) { status.legacyDone = true; break; }
+        }
+      } catch (e: any) { status.error = `옛 파일 사본: ${e?.message || e}`; }
+    }
+    status.stage = 'done';
   } catch (e: any) {
-    status.ok = false; status.error = e?.message || String(e);
+    status.error = e?.message || String(e);
+    if (!status.lastSuccessAt || status.lastSuccessAt !== status.at) status.ok = false;
   }
   await writeStatus(sb, status);
   return status;
