@@ -5,7 +5,7 @@ const palettes: Record<string, [string, string]> = {
 };
 export function coverFor(board: string, title: string, seed = 0) {
   const [a, b] = palettes[board] || palettes.default;
-  const t = (title || '').replace(/[<>&"']/g, '').trim();
+  const t = (title || '').replace(/[<>&"]/g, '').replace(/'/g, '’').trim(); // SVG 속성 따옴표와 겹치지 않게 Son's → Son’s
   const words = t.split(/\s+/).slice(0, 3).join(' ');
   const short = words.length > 22 ? words.slice(0, 22) + '…' : words.replace(/[,.:;·]+$/, ''); // '손기헌 교수 연구실,'처럼 끝 문장부호 제거
   // 호출부는 로케일에 맞는 제목을 넘긴다(영문 페이지에 국문 표지 방지)
