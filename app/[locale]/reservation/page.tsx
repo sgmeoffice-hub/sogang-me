@@ -5,6 +5,7 @@ import ReservationCalendar from '@/components/ReservationCalendar';
 import { getReservations } from '@/lib/data';
 import { facilities } from '@/lib/nav';
 import { T, type Locale } from '@/lib/i18n';
+import { facultyNames, peopleEn } from '@/lib/names';
 export const revalidate = 30;
 
 export default async function Reservation({ params, searchParams }: { params: { locale: Locale }; searchParams: { f?: string; y?: string; m?: string } }) {
@@ -15,7 +16,10 @@ export default async function Reservation({ params, searchParams }: { params: { 
   const yN = Number(searchParams.y); const mN = Number(searchParams.m); // 잘못된 값이면 이번 달로 (깨진 달력 방지)
   const y = Number.isInteger(yN) && yN >= 2000 && yN <= 2100 ? yN : now.getUTCFullYear();
   const m = Number.isInteger(mN) && mN >= 1 && mN <= 12 ? mN : now.getUTCMonth() + 1;
-  const rows = await getReservations(facility, y, m);
+  const raw = await getReservations(facility, y, m);
+  // 예약자 칸은 국문으로 입력된다("정헌재 교수님") → 영문 페이지에서는 교수는 공식 영문 이름, 학생 이름은 로마자로(일반 낱말은 그대로)
+  const names = ko ? [] : await facultyNames();
+  const rows = ko ? raw : (raw as any[]).map((r) => ({ ...r, user_name: peopleEn(names, r.user_name, 3) }));
   const prev = m === 1 ? { y: y - 1, m: 12 } : { y, m: m - 1 }; const next = m === 12 ? { y: y + 1, m: 1 } : { y, m: m + 1 };
   const fac = facilities.find((x) => x.id === facility)!;
   const todayStr = now.toISOString().slice(0, 10);

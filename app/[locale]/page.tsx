@@ -89,7 +89,7 @@ export default async function Home({ params }: { params: { locale: Locale } }) {
                     <p className="text-[13px] font-semibold tracking-[0.12em] text-white/70 uppercase">{ko ? a.en : ''}</p>
                     <h3 className="mt-2 font-brand text-[1.6rem] sm:text-[1.9rem] md:text-[2.3rem] leading-tight break-keep">{ko ? a.ko : a.en}</h3>
                     <p className="mt-4 text-[15px] leading-relaxed text-white/85">{ko ? a.descKo : a.descEn}</p>
-                    <ul className="mt-5 flex flex-wrap gap-2">{(ko ? a.keywordsKo : a.keywordsEn).map((k) => <li key={k} className="text-[12.5px] px-2.5 py-1 bg-white/12 border border-white/20 rounded-full">{k}</li>)}</ul>
+                    <ul className="mt-5 flex flex-wrap gap-2">{(ko ? a.keywordsKo : a.keywordsEn).map((k) => <li key={k} className="text-[12.5px] px-2.5 py-1 bg-white/[.12] border border-white/20 rounded-full">{k}</li>)}</ul>
                     <span className="mt-auto pt-6 inline-flex items-center gap-2 text-[14px] font-semibold">{ko ? '연구실 보기' : 'Explore labs'} <span className="transition-transform group-hover:translate-x-1">→</span></span>
                   </div>
                 </Link>
@@ -117,7 +117,7 @@ export default async function Home({ params }: { params: { locale: Locale } }) {
               {videos.map((v: any, i: number) => (
                 <Reveal key={v.id} delay={i * 70}>
                   <Link href={`/${l}/board/videos/${v.id}`} className="group block">
-                    <div className="relative aspect-video overflow-hidden bg-white/5"><img src={youtubeThumb(v.video_url) || v.thumbnail_url} alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" /><span className="absolute inset-0 grid place-items-center"><span className="w-12 h-12 rounded-full bg-sg-cardinal/90 grid place-items-center text-white pl-1">▶</span></span></div>
+                    <div className="relative aspect-video overflow-hidden bg-white/5"><img src={youtubeThumb(v.video_url) || v.thumbnail_url} alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" /><span className="absolute inset-0 grid place-items-center"><span className="w-12 h-12 rounded-full bg-[rgba(175,39,47,0.9)] grid place-items-center text-white pl-1">▶</span></span></div>
                     <p className="mt-3 text-[12px] font-semibold text-white/60">{ko ? v.category : v.category_en || v.category}</p>
                     <h3 className="mt-1 font-bold text-[15px] leading-snug group-hover:text-sg-cardinal line-clamp-2">{t(v, 'title', l)}</h3>
                   </Link>
@@ -137,7 +137,7 @@ export default async function Home({ params }: { params: { locale: Locale } }) {
                 <Reveal key={p.k} delay={i * 80}>
                   <Link href={`/${l}${p.href}`} className="group relative block aspect-[3/4] overflow-hidden bg-sg-ink text-white">
                     <img src={p.img} alt="" className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" loading="lazy" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-sg-ink via-sg-ink/40 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-sg-ink via-[rgba(26,26,26,0.4)] to-transparent" />
                     <div className="absolute inset-x-0 bottom-0 p-6">
                       <p className="text-[12.5px] font-semibold tracking-[0.12em] text-white/70 uppercase">{ko ? p.tagKo : p.tagEn}</p>
                       <h3 className="mt-1 font-brand text-[1.8rem] leading-tight">{T(l, p.k)}</h3>

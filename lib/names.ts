@@ -1,6 +1,8 @@
 import { createPublicClient } from './supabase-server';
 import type { NameRow } from './names-core';
-export { namesIn, namesPrompt, enforceNames, type NameRow } from './names-core';
+import { koNamesToEn } from './names-core';
+import { romanizeNamesIn } from './romanize';
+export { namesIn, namesPrompt, enforceNames, koNamesToEn, type NameRow } from './names-core';
 
 /** 교수 공식 영문 이름 용어집 — faculty 테이블(name_ko/name_en, lab_ko/lab_en)에서 읽어 번역에 쓴다.
  *  행정선생님은 지금처럼 국문으로만 쓰면 되고, 번역기가 이름을 제멋대로 로마자화("Seok-Hwan Jeong", "Shin Chung-soo")하는 것을
@@ -19,4 +21,10 @@ export async function facultyNames(): Promise<NameRow[]> {
     cache = { at: Date.now(), rows };
     return rows;
   } catch { return cache?.rows ?? []; }
+}
+
+/** 영문 페이지의 사람 이름 칸(조원·지도교수·예약자): 교수는 공식 영문 이름, 나머지 한글 이름은 로마자(표리원 → Riwon Pyo).
+ *  minLen=3: 자유 입력 칸(예약자)에서는 두 글자 낱말을 이름으로 보지 않는다. */
+export function peopleEn(rows: NameRow[], s: string | null | undefined, minLen = 2): string {
+  return romanizeNamesIn(koNamesToEn(rows, s), minLen);
 }

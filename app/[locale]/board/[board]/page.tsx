@@ -4,8 +4,9 @@ import PostCard, { fmtDate } from '@/components/PostCard';
 import { PromoView, CapstoneView, FestivalView, VideosView } from '@/components/BoardViews';
 import { getPosts } from '@/lib/data';
 import { boards, boardSection } from '@/lib/nav';
-import { t, T, type Locale } from '@/lib/i18n';
+import { t, T, authorLabel, type Locale } from '@/lib/i18n';
 import { notFound } from 'next/navigation';
+import { facultyNames, peopleEn } from '@/lib/names';
 export const revalidate = 60;
 const PER = 15;
 const intros: Record<string, [string, string]> = {
@@ -21,7 +22,11 @@ export default async function BoardList({ params, searchParams }: { params: { lo
   const special = ['promo', 'capstone', 'festival', 'videos'].includes(board);
   const pageN = Number(searchParams.page); // 숫자가 아니면 NaN → 1페이지로 (NaN이 range()에 흘러가 빈 화면이 되지 않게)
   const page = Number.isFinite(pageN) && pageN >= 1 ? Math.floor(pageN) : 1; const q = searchParams.q || '';
-  const { posts, total } = await getPosts(board, special ? 1 : page, special ? 200 : PER, q);
+  const { posts: raw, total } = await getPosts(board, special ? 1 : page, special ? 200 : PER, q);
+  // 캡스톤·학술제의 조원·지도교수는 국문으로 입력된다 → 영문 페이지에서는 교수는 공식 영문 이름, 학생은 로마자로
+  const people = !ko && raw.some((p) => p.advisor || p.members);
+  const names = people ? await facultyNames() : [];
+  const posts = people ? raw.map((p) => ({ ...p, advisor: p.advisor && peopleEn(names, p.advisor), members: p.members && peopleEn(names, p.members) })) : raw;
   const pages = Math.max(1, Math.ceil(total / PER));
   const [section, current] = boardSection[board] || ['board', board];
   const href = (p: number) => `/${l}/board/${board}?page=${p}${q ? `&q=${encodeURIComponent(q)}` : ''}`;
@@ -48,7 +53,7 @@ export default async function BoardList({ params, searchParams }: { params: { lo
             <th className="py-3 w-16 text-left">No.</th><th className="py-3 text-left">{ko ? '제목' : 'Title'}</th><th className="py-3 w-28 text-left">{T(l, 'author')}</th><th className="py-3 w-28 text-left">{T(l, 'date')}</th><th className="py-3 w-16 text-right">{T(l, 'views')}</th></tr></thead>
           <tbody>
             {posts.map((p, i) => (
-              <tr key={p.id} className={`border-b border-sg-line ${p.is_pinned ? 'bg-sg-mist/70' : ''}`}>
+              <tr key={p.id} className={`border-b border-sg-line ${p.is_pinned ? 'bg-[#f9f9f9]' : ''}`}>
                 <td className="py-3.5 pr-2 text-[13px] text-sg-gray9 hidden md:table-cell">{p.is_pinned ? <span className="text-sg-cardinal font-bold">{ko ? '공지' : 'PIN'}</span> : total - (page - 1) * PER - i}</td>
                 <td className="py-3.5 pr-3">
                   <Link href={`/${l}/board/${board}/${p.id}`} className="font-medium hover:text-sg-cardinal line-clamp-2">
@@ -57,7 +62,7 @@ export default async function BoardList({ params, searchParams }: { params: { lo
                   </Link>
                   <span className="md:hidden block text-[12px] text-sg-gray9 mt-1">{fmtDate(p.created_at)}</span>
                 </td>
-                <td className="py-3.5 pr-3 text-sg-gray11 hidden md:table-cell">{p.author}</td>
+                <td className="py-3.5 pr-3 text-sg-gray11 hidden md:table-cell">{authorLabel(p.author, l)}</td>
                 <td className="py-3.5 pr-3 text-[13px] text-sg-gray9 hidden md:table-cell">{fmtDate(p.created_at)}</td>
                 <td className="py-3.5 text-right text-[13px] text-sg-gray9 hidden md:table-cell">{p.view_count}</td>
               </tr>

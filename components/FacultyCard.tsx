@@ -7,7 +7,7 @@ export default function FacultyCard({ f, locale }: { f: any; locale: Locale }) {
   const ko = locale === 'ko';
   const area = areas.find((a) => a.id === f.field);
   return (
-    <Link href={`/${locale}/faculty/${f.id}`} className="card group relative flex gap-5 p-5 md:p-6 overflow-hidden">
+    <Link href={`/${locale}/faculty/${f.id}`} className="card group relative flex min-w-0 gap-5 p-5 md:p-6 overflow-hidden">
       <span className="absolute left-0 top-0 h-full w-1.5" style={{ background: area?.color || 'var(--sg-gray5)' }} />
       <div className="w-[104px] h-[124px] shrink-0 bg-sg-mist overflow-hidden relative">
         {f.photo_url ? <img src={f.photo_url} alt="" className="w-full h-full object-cover" loading="lazy" /> : <div className="absolute inset-0 grid place-items-center text-sg-gray5 text-3xl font-brand">{(f.name_ko || '').slice(0, 1)}</div>}

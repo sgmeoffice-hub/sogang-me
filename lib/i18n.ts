@@ -9,6 +9,14 @@ export function t<T extends Record<string, any>>(row: T, key: string, locale: Lo
   return v ?? '';
 }
 
+/** 게시글 작성자 표시. 옛 사이트 글의 '최고관리자'(옛 게시판 프로그램의 기본 계정명)와 기본값 '기계공학과'는 학과 이름으로,
+ *  영문 페이지에서는 영문으로 보여 준다(영문 목록에 한글 작성자가 남던 문제, 2026-09-25 전체 점검). 그 밖의 이름은 입력한 그대로. */
+export function authorLabel(author: string | null | undefined, locale: Locale): string {
+  const a = (author || '').trim();
+  if (!a || a === '최고관리자' || a === '관리자' || a === '기계공학과') return locale === 'en' ? 'Dept. of ME' : '기계공학과';
+  return a;
+}
+
 export const ui = {
   ko: {
     home: '홈', more: '더보기', all: '전체', search: '검색', date: '날짜', views: '조회', author: '작성자',

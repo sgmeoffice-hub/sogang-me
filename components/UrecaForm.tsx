@@ -39,7 +39,7 @@ export default function UrecaForm({ locale, labs }: { locale: Locale; labs: Lab[
         <p className="eyebrow">{ko ? '지원 연구실 (지망 순서 1·2·3 선택) *' : 'Preferred labs (rank 1–3) *'}</p>
         <div className="mt-3 grid gap-2 sm:grid-cols-2">
           {labs.map((l) => (
-            <div key={l.id} className={`flex items-center gap-3 border p-3 ${ranks[l.id] ? 'border-sg-cardinal bg-sg-cardinal/5' : 'border-sg-line'}`}>
+            <div key={l.id} className={`min-w-0 flex items-center gap-3 border p-3 ${ranks[l.id] ? 'border-sg-cardinal bg-[rgba(175,39,47,0.05)]' : 'border-sg-line'}`}>
               <select value={ranks[l.id] || ''} onChange={(e) => setRanks({ ...ranks, [l.id]: e.target.value })} className="border border-sg-line px-2 py-1.5 text-[13px] bg-white w-[72px]">
                 <option value="">—</option><option value="1">1{ko ? '지망' : 'st'}</option><option value="2">2{ko ? '지망' : 'nd'}</option><option value="3">3{ko ? '지망' : 'rd'}</option>
               </select>

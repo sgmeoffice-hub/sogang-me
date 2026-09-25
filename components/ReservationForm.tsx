@@ -46,7 +46,7 @@ export default function ReservationForm({ locale, facility, date }: { locale: Lo
       <label className="text-[13px]"><span className="eyebrow">{ko ? '이름 (소속)' : 'Name (lab)'}</span><input name="user_name" required className="input mt-1" placeholder={ko ? '홍길동 (OO연구실)' : 'Name (lab)'} /></label>
       <label className="text-[13px]"><span className="eyebrow">{ko ? '연락처' : 'Contact'}</span><input name="contact" required className="input mt-1" placeholder={ko ? '이메일 또는 전화' : 'Email or phone'} /></label>
       <label className="text-[13px] sm:col-span-2"><span className="eyebrow">{ko ? '사용 목적' : 'Purpose'}</span><input name="purpose" className="input mt-1" /></label>
-      {warn && <p className="sm:col-span-2 border-l-4 border-sg-cardinal bg-sg-cardinal/5 px-4 py-3 text-[14px] text-sg-cardinal font-semibold">{warn}</p>}
+      {warn && <p className="sm:col-span-2 border-l-4 border-sg-cardinal bg-[rgba(175,39,47,0.05)] px-4 py-3 text-[14px] text-sg-cardinal font-semibold">{warn}</p>}
       <div className="sm:col-span-2 flex items-center gap-4">
         <button disabled={state === 'saving' || !!warn} className="btn-primary disabled:opacity-50">{state === 'saving' ? '…' : ko ? '예약 신청' : 'Request reservation'}</button>
         {state === 'error' && <p className="text-[13px] text-sg-cardinal font-semibold">{msg}</p>}

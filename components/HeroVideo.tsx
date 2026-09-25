@@ -4,6 +4,7 @@ import { DesignEmblem, ThermalEmblem, ControlEmblem, ManufacturingEmblem } from 
 import { areas } from '@/content/areas';
 import HeroRotator from './HeroRotator';
 import { fmtDate, type Post } from './PostCard';
+import { boardTint } from '@/lib/board-colors';
 
 const Em = [DesignEmblem, ThermalEmblem, ControlEmblem, ManufacturingEmblem];
 
@@ -38,7 +39,8 @@ function HeroNewsRows({ locale, items }: { locale: Locale; items: HeroNewsItem[]
                 {t(p, 'title', locale)}
               </span>
               <span className="flex items-center gap-2 text-[11px] leading-none">
-                <span className="min-w-0 truncate border border-white/25 px-1.5 py-[3px] font-semibold tracking-[.04em] text-white/80">{T(locale, p.board as UIKey) || p.board}</span>
+                {/* 게시판별 배경색으로 구분(lib/board-colors) — 테두리만 있던 칩이 서로 구분이 안 된다는 책임자 의견(9/25) */}
+                <span className="min-w-0 truncate px-1.5 py-[3px] font-semibold tracking-[.04em] text-white" style={{ backgroundColor: boardTint(p.board) }}>{T(locale, p.board as UIKey) || p.board}</span>
                 <time dateTime={d.replace(/\./g, '-')} className="ml-auto shrink-0 tabular-nums text-white/65">{d}</time>
               </span>
             </Link>
@@ -137,7 +139,7 @@ export default function HeroVideo({ locale, videoUrl, poster, taglineKo, tagline
         {/* Four fields strip */}
         <div className="mt-14 md:mt-20 grid grid-cols-2 lg:grid-cols-4 gap-px bg-white/15 border border-white/15 backdrop-blur-sm rise rise-4">
           {areas.map((a, i) => { const E = Em[i]; return (
-            <Link key={a.id} href={`/${locale}/graduate/areas#${a.id}`} className="group bg-sg-ink/40 hover:bg-sg-cardinal/80 transition-colors p-4 md:p-5 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+            <Link key={a.id} href={`/${locale}/graduate/areas#${a.id}`} className="group bg-[rgba(26,26,26,0.4)] hover:bg-[rgba(175,39,47,0.8)] transition-colors p-4 md:p-5 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
               <E className="w-[64px] h-[44px] md:w-[92px] md:h-[64px] shrink-0 text-white/90" />
               <div className="min-w-0">
                 <p className="font-bold text-[15px] md:text-[17px] leading-tight break-keep">{ko ? a.ko : a.en}</p>

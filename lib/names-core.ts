@@ -67,3 +67,20 @@ export function namesPrompt(rows: NameRow[]): string {
   return `\n- Faculty names: use EXACTLY these official romanizations (given name first, this spelling and hyphenation). Never re-romanize them:\n` +
     rows.map((r) => `  ${r.ko} = ${r.en}${r.labKo && r.labEn ? `; ${r.labKo} = ${r.labEn}` : ''}`).join('\n');
 }
+
+/** 영문 페이지 표시용: 사용자가 국문으로 적은 짧은 이름 칸(예약자·지도교수 등)의 교수 이름을 공식 영문으로 바꾼다.
+ *  "정헌재 교수님" → "Prof. Heonjae Jeong", "김지우 (강성원 교수님 연구실)" → "김지우 (Prof. Sungwon Kang's lab)", "김남근" → "Namkeun Kim".
+ *  교수진 표에 없는 이름(학생 등)은 잘못된 로마자 표기를 만들지 않도록 그대로 둔다. */
+export function koNamesToEn(rows: NameRow[], s: string | null | undefined): string {
+  let out = s || '';
+  if (!/[가-힣]/.test(out)) return out;
+  for (const r of rows) {
+    const ko = r.ko.trim(); if (!/^[가-힣]{2,5}$/.test(ko)) continue;
+    const k = `(?<![가-힣])${ko}`;
+    out = out
+      .replace(new RegExp(`${k}\\s*(?:교수님?)?\\s*(?:연구실|랩)(?![가-힣])`, 'g'), `Prof. ${r.en}'s lab`)
+      .replace(new RegExp(`${k}\\s*교수님?(?![가-힣])`, 'g'), `Prof. ${r.en}`)
+      .replace(new RegExp(`${k}(?![가-힣])`, 'g'), r.en);
+  }
+  return out;
+}

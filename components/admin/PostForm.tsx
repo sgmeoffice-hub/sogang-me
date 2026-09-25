@@ -26,7 +26,7 @@ export default function PostForm({ post, defaultBoard }: { post?: any; defaultBo
         <label className="text-[13px]">작성일<input name="created_at" type="date" defaultValue={post?.created_at?.slice(0, 10)} className="input mt-1" /></label>
       </div>
       {(showTerm || showCat || showOrder) && (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 border border-sg-cardinal/30 bg-sg-cardinal/5 p-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 border border-[rgba(175,39,47,0.3)] bg-[rgba(175,39,47,0.05)] p-4">
           {showTerm && <label className="text-[13px]">학년도-학기 *<input name="term" required defaultValue={post?.term || ''} placeholder={board === 'festival' ? '예: 2025' : '예: 2025-2'} className="input mt-1" /><span className="block text-[11px] text-sg-steel mt-1">{board === 'festival' ? '연도 4자리' : '형식: 2025-1 / 2025-2'}</span></label>}
           {showTerm && <label className="text-[13px]">조원<input name="members" defaultValue={post?.members || ''} placeholder="김OO, 이OO, 박OO" className="input mt-1" /></label>}
           {showTerm && <label className="text-[13px]">지도교수<input name="advisor" defaultValue={post?.advisor || ''} placeholder="OOO 교수" className="input mt-1" /></label>}

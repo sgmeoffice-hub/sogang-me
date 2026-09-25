@@ -84,7 +84,7 @@ export function FestivalView({ posts, locale, year }: { posts: Post[]; locale: L
     <div>
       {years.length > 0 && <div className="flex flex-wrap gap-2 mb-8">{years.map((y) => <Link key={y} href={`/${locale}/board/festival?year=${y}`} className={`px-4 py-2 text-[14px] font-semibold border ${y === cur ? 'bg-sg-ink text-white border-sg-ink' : 'border-sg-line hover:border-sg-ink'}`}>{y}</Link>)}</div>}
       {years.length === 0 && (
-        <div className="py-14 px-6 text-center border border-dashed border-sg-line bg-sg-mist/50">
+        <div className="py-14 px-6 text-center border border-dashed border-sg-line bg-[#fbfbfb]">
           <p className="font-bold text-[17px]">{ko ? '학술제 자료를 준비 중입니다.' : 'Festival records are being prepared.'}</p>
           <p className="mt-2 text-[14px] text-sg-gray11">{ko ? 'URECA 학부인턴 연구 · 창의적종합설계팀 연구 · 연구프로젝트팀 연구 · 학부생 수상 명단을 연도별로 등록할 수 있는 구조가 준비되어 있으며, 학과 행정팀이 보유한 과거 자료가 확보되는 대로 게시됩니다.' : 'The board is ready for URECA, capstone and research-project presentations plus award lists by year; past records will be posted once provided by the department office.'}</p>
         </div>
@@ -135,7 +135,7 @@ export function VideosView({ posts, locale }: { posts: Post[]; locale: Locale })
               <Link key={p.id} href={`/${locale}/board/videos/${p.id}`} className="card group flex flex-col overflow-hidden">
                 <div className="relative aspect-video bg-sg-ink overflow-hidden">
                   <img src={youtubeThumb(p.video_url) || p.thumbnail_url || coverFor('notice', t(p, 'title', locale), p.id)} alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
-                  <span className="absolute inset-0 grid place-items-center"><span className="w-14 h-14 rounded-full bg-sg-cardinal/90 grid place-items-center text-white text-xl pl-1 shadow-lg">▶</span></span>
+                  <span className="absolute inset-0 grid place-items-center"><span className="w-14 h-14 rounded-full bg-[rgba(175,39,47,0.9)] grid place-items-center text-white text-xl pl-1 shadow-lg">▶</span></span>
                 </div>
                 <div className="p-4"><h3 className="font-bold text-[15px] leading-snug group-hover:text-sg-cardinal line-clamp-2">{t(p, 'title', locale)}</h3><p className="mt-2 text-[13px] text-sg-gray11 line-clamp-2">{t(p, 'excerpt', locale)}</p></div>
               </Link>

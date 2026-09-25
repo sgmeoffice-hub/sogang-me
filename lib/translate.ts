@@ -1,4 +1,4 @@
-import { glossaryPrompt, polishEnglish } from './glossary';
+import { glossaryPrompt, polishEnglish, preKo } from './glossary';
 import { facultyNames, namesIn, namesPrompt, enforceNames, type NameRow } from './names';
 import { segmentHtml, renderUnit, HANGUL, type Unit } from './html-segments';
 
@@ -94,7 +94,7 @@ async function freeBatch(texts: string[]): Promise<string[]> {
 async function freeHtml(html: string): Promise<string> {
   const parts = segmentHtml(html);
   const units = parts.filter((p): p is Unit => typeof p !== 'string');
-  const tr = await freeBatch(units.map((u) => u.text));
+  const tr = await freeBatch(units.map((u) => preKo(u.text)));
   let k = 0;
   return polishEnglish(parts.map((p) => (typeof p === 'string' ? p : renderUnit(p, tr[k++]))).join(''));
 }
@@ -149,7 +149,7 @@ export async function translateKoToEn(fields: Record<string, string>): Promise<R
     const html = entries.filter(([, v]) => /<[a-z][^>]*>/i.test(v));
     const plain = entries.filter(([, v]) => !/<[a-z][^>]*>/i.test(v));
     if (plain.length) {
-      const tr = await freeBatch(plain.map(([, v]) => v.replace(/\s+/g, ' ').trim()));
+      const tr = await freeBatch(plain.map(([, v]) => preKo(v.replace(/\s+/g, ' ').trim())));
       plain.forEach(([k], i) => { out[k] = enforceNames(names, polishEnglish(tr[i])); });
     }
     for (const [k, v] of html) out[k] = enforceNames(names, await freeHtml(v));

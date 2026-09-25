@@ -8,6 +8,8 @@ const config: Config = {
           red: 'var(--sg-red)',
           cardinal: 'var(--sg-cardinal)',
           deep: 'var(--sg-deep)',
+          gray4: 'var(--sg-gray4)',
+          gray5: 'var(--sg-gray5)',
           gray9: 'var(--sg-gray9)',
           gray11: 'var(--sg-gray11)',
           blue: 'var(--sg-blue)',

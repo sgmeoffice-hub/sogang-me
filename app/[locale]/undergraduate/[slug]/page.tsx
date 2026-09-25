@@ -35,7 +35,7 @@ export default async function UG({ params }: { params: { locale: Locale; slug: s
         <p className="eyebrow">{ko ? '전공소개' : 'Major Fields'}</p>
         <h2 className="h-section mt-2">{ko ? '기계공학의 네 가지 기초 분야' : 'Four foundational fields of mechanical engineering'}</h2>
         <p className="mt-4 text-[17px] leading-relaxed text-sg-gray11 max-w-3xl">{ko ? '기계공학은 설계·역학, 열·유체, 제어·진동·로보틱스, 생산·제조라는 네 기둥 위에 서 있습니다. 각 분야는 고유한 학문 체계를 바탕으로 자동차, 항공우주, 에너지, 반도체, 바이오 등 모든 산업을 떠받치며, 네 분야가 만나 로봇과 Physical AI 같은 융합 영역으로 확장됩니다.' : 'Mechanical engineering stands on four pillars — design and mechanics, thermal and fluids, control-vibration-robotics, and manufacturing. Each is a discipline in its own right, underpinning every industry from automotive and aerospace to energy, semiconductors and bio, and together they converge into fields such as robotics and Physical AI.'}</p>
-        <div className="mt-10 border border-sg-line bg-sg-mist/40 p-5 md:p-10">
+        <div className="mt-10 border border-sg-line bg-[#fcfcfc] p-5 md:p-10">
           <div className="max-w-xl mx-auto bg-sg-ink text-white text-center px-6 py-5">
             <div className="flex items-center justify-center gap-3">
               <svg viewBox="0 0 48 48" className="w-9 h-9 md:w-11 md:h-11 shrink-0" aria-hidden>

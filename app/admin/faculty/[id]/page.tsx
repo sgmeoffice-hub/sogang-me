@@ -41,7 +41,7 @@ export default async function EditFaculty({ params }: { params: { id: string } }
           <I n="sort_order" l="정렬 순서 (작을수록 앞)" v={String(f?.sort_order ?? 100)} />
         </div>
       </div>
-      <div className="border border-sg-cardinal/30 bg-sg-cardinal/5 p-4">
+      <div className="border border-[rgba(175,39,47,0.3)] bg-[rgba(175,39,47,0.05)] p-4">
         <p className="text-[13px] font-semibold">소속 연구그룹 <span className="font-normal text-sg-steel">— 체크한 그룹의 「대학원과정 › 융합 및 응용연구 그룹」 페이지에 자동으로 표시됩니다 (중복 선택 가능)</span></p>
         <div className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3 text-[13px]">
           {researchGroupDefs.map((g) => <label key={g.id} className="flex items-center gap-2"><input type="checkbox" name={`group_${g.id}`} defaultChecked={Array.isArray(f?.groups) && f.groups.includes(g.id)} /> {g.ko}</label>)}

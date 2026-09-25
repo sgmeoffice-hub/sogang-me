@@ -24,7 +24,7 @@ export default async function UrecaAdmin({ searchParams }: { searchParams: { yea
     <p className="mt-3 text-[13px] text-sg-steel">{rows.length}건 · 신청이 접수되면 설정에 등록한 이메일로 알림이 발송됩니다.</p>
     <div className="mt-4 space-y-3">
       {rows.map((r: any) => (
-        <div key={r.id} className={`bg-white border p-4 grid gap-3 md:grid-cols-[1fr_1.4fr_auto] ${r.status === 'pending' ? 'border-sg-cardinal/40' : 'border-sg-line'}`}>
+        <div key={r.id} className={`bg-white border p-4 grid gap-3 md:grid-cols-[1fr_1.4fr_auto] ${r.status === 'pending' ? 'border-[rgba(175,39,47,0.4)]' : 'border-sg-line'}`}>
           <div className="text-[14px]">
             <p className="font-bold">{r.name} <span className="font-normal text-sg-steel">{r.student_id} · {r.semester}</span></p>
             <p className="text-[13px] text-sg-steel mt-1">{r.year} {tk(r.term)} · {String(r.created_at).slice(0, 10)}</p>

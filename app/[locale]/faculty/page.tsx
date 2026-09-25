@@ -30,7 +30,7 @@ export default async function Faculty({ params, searchParams }: { params: { loca
                 <div className="w-[120px] h-[80px] shrink-0" style={{ color: a.color }}><E className="w-full h-full" /></div>
                 <div><h2 className="font-brand text-[1.8rem] md:text-[2.2rem] leading-tight">{ko ? a.ko : a.en}</h2><p className="text-[14px] text-sg-gray9 mt-1">{ko ? `${a.en} · ${list.length}명` : `${list.length} ${list.length === 1 ? 'professor' : 'professors'}`}</p></div>
               </Reveal>
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{list.map((f: any, i: number) => <Reveal key={f.id} delay={i * 50}><FacultyCard f={f} locale={l} /></Reveal>)}</div>
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{list.map((f: any, i: number) => <Reveal key={f.id} delay={i * 50} className="min-w-0"><FacultyCard f={f} locale={l} /></Reveal>)}</div>
             </section>
           );
         })}

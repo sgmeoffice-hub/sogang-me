@@ -24,7 +24,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const b = adminBase();
   const menu = [['', '대시보드'], ['/posts', '게시판'], ['/faculty', '교수진'], ['/pages', '페이지'], ['/reservations', '시설 예약'], ['/ureca', 'URECA 지원'], ['/banners', '배너'], ['/settings', '메인·설정']];
   return (
-    <div className="min-h-screen grid lg:grid-cols-[220px_1fr]">
+    <div className="min-h-screen grid grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)]">
       <aside className="bg-sg-ink text-white p-5 lg:min-h-screen">
         <p className="font-mono text-[11px] tracking-widest text-white/50">SOGANG ME</p>
         <p className="font-bold text-lg">관리자</p>
@@ -35,7 +35,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <form action={signOut}><button className="mt-2 text-[12px] underline text-white/70">로그아웃</button></form>
         <Link href="/ko" className="mt-6 block text-[12px] text-white/70 underline">사이트 보기 →</Link>
       </aside>
-      <main className="p-6 lg:p-10 bg-sg-mist/50 min-w-0"><TranslateRetry />{children}</main>
+      <main className="p-6 lg:p-10 bg-sg-mist min-w-0"><TranslateRetry />{children}</main>
     </div>
   );
 }

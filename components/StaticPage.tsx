@@ -4,7 +4,7 @@ import { getPage } from '@/lib/data';
 import type { Locale } from '@/lib/i18n';
 import { notFound } from 'next/navigation';
 import { assets, siteMedia } from '@/content/assets';
-import { toHtml } from '@/lib/html';
+import { toHtml, wrapTables } from '@/lib/html';
 const pageImages: Record<string, string> = { 'about/intro': assets.mainVisual, 'about/goals': assets.entrance, 'undergraduate/ureca': assets.ureca, 'undergraduate/activities': assets.festival, 'graduate/admission': assets.research };
 /** 산학 트랙 협력기업 로고 (채용연계 트랙 안내 목적의 공식 로고 표기) */
 const industryLogos: Record<string, { img: string; ko: string; en: string }> = {
@@ -36,7 +36,7 @@ export default async function StaticPage({ locale, section, slug, children }: { 
         )}
         {pageImages[key] && !children && <img src={pageImages[key]} alt="" className="w-full aspect-[21/9] object-cover mb-10 border border-sg-line" />}
         {children}
-        {html && <div className="prose-sg" dangerouslySetInnerHTML={{ __html: toHtml(html) }} />}
+        {html && <div className="prose-sg" dangerouslySetInnerHTML={{ __html: wrapTables(toHtml(html)) }} />}
       </article>
     </>
   );

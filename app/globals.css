@@ -51,6 +51,13 @@ body { @apply bg-sg-paper text-sg-ink font-sans antialiased; word-break: keep-al
 .prose-sg a { @apply text-sg-cardinal underline underline-offset-4; }
 .prose-sg blockquote { @apply border-l-4 border-sg-cardinal pl-4 my-4 text-sg-steel; }
 .prose-sg img { @apply my-5 max-w-full h-auto; }
+/* 모바일 넘침 방지(2026-09-25 전체 점검): 긴 URL·영문 낱말은 줄 끝에서 끊고, 넓은 표는 가로 스크롤 상자 안에서만 움직이게 */
+.prose-sg { overflow-wrap: break-word; }
+.prose-sg a { overflow-wrap: anywhere; }
+.prose-sg .tbl-scroll { @apply my-6 max-w-full overflow-x-auto; -webkit-overflow-scrolling: touch; }
+.prose-sg .tbl-scroll > table { @apply my-0; }
+.prose-sg :where(p, div, figure, img, iframe, video, embed, object) { max-width: 100%; }   /* 옛 글의 인라인 width(예: 700px) 방지 */
+.prose-sg [style*="white-space: pre"], .prose-sg [style*="white-space:pre"] { white-space: pre-wrap !important; }   /* 옛 글의 줄바꿈 금지 서식 */
 .card { @apply bg-white border border-sg-line transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_40px_-16px_rgba(26,26,26,0.22)]; }
 .btn { @apply inline-flex items-center gap-2 px-6 py-3.5 text-[15px] font-semibold transition-colors; }
 .btn-primary { @apply btn bg-sg-cardinal text-white hover:bg-sg-deep; }

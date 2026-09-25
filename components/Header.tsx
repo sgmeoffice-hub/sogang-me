@@ -45,9 +45,11 @@ export default function Header({ locale }: { locale: Locale }) {
       <div className="h-1 bg-sg-cardinal" />
       <div className="container-site h-[76px] flex items-center justify-between gap-6">
         <Logo locale={locale} />
-        <nav className="hidden lg:flex items-center h-full" aria-label="Main" onMouseEnter={() => setMega(true)}>
+        {/* 전체 메뉴는 1280px 이상에서만: 1024~1365px에서 메뉴가 넘쳐 오른쪽 BK21·언어 전환 버튼이 화면 밖으로 잘리던 문제(2026-09-25 전체 점검).
+            1280~1439px은 메뉴 간격을 줄이고, 그보다 좁으면 햄버거 메뉴 */}
+        <nav className="hidden xl:flex items-center h-full" aria-label="Main" onMouseEnter={() => setMega(true)}>
           {nav.map((item) => (
-            <Link key={item.id} href={`/${locale}${item.href}`} className="relative px-[18px] h-full flex items-center text-[16.5px] font-semibold text-sg-ink hover:text-sg-cardinal after:absolute after:left-[18px] after:right-[18px] after:bottom-0 after:h-[3px] after:bg-sg-cardinal after:scale-x-0 after:origin-left after:transition-transform hover:after:scale-x-100">
+            <Link key={item.id} href={`/${locale}${item.href}`} className="relative px-3 min-[1440px]:px-[18px] h-full flex items-center text-[16.5px] font-semibold text-sg-ink hover:text-sg-cardinal after:absolute after:left-3 after:right-3 min-[1440px]:after:left-[18px] min-[1440px]:after:right-[18px] after:bottom-0 after:h-[3px] after:bg-sg-cardinal after:scale-x-0 after:origin-left after:transition-transform hover:after:scale-x-100">
               {label(item, locale)}
             </Link>
           ))}
@@ -63,13 +65,13 @@ export default function Header({ locale }: { locale: Locale }) {
           <a href={switchHref} onClick={switchLang} className="flex items-center gap-2 px-3 py-2 border border-sg-line text-[13px] font-semibold text-sg-ink hover:border-sg-ink" aria-label={other === 'en' ? 'Switch to English' : '한국어로 전환'}>
             <Flag code={other} /> {other === 'en' ? 'ENG' : '한국어'}
           </a>
-          <button onClick={() => setOpen(!open)} className="lg:hidden p-2 text-sg-ink" aria-label="Menu" aria-expanded={open}>
+          <button onClick={() => setOpen(!open)} className="xl:hidden p-2 text-sg-ink" aria-label="Menu" aria-expanded={open}>
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">{open ? <path d="M6 6l12 12M18 6L6 18" /> : <path d="M3 7h18M3 12h18M3 17h18" />}</svg>
           </button>
         </div>
       </div>
       {/* Mega menu (desktop) — all sub-menus at once, like the university site */}
-      <div className={`hidden lg:block absolute inset-x-0 top-full bg-white/95 backdrop-blur-xl border-t border-sg-line overflow-hidden transition-[max-height,opacity] duration-300 ${mega ? 'max-h-[420px] opacity-100' : 'max-h-0 opacity-0'}`}>
+      <div className={`hidden xl:block absolute inset-x-0 top-full bg-white/95 backdrop-blur-xl border-t border-sg-line overflow-hidden transition-[max-height,opacity] duration-300 ${mega ? 'max-h-[420px] opacity-100' : 'max-h-0 opacity-0'}`}>
         <div className="container-site grid grid-cols-7 gap-4 py-7">
           {nav.map((item) => (
             <div key={item.id}>
@@ -82,7 +84,7 @@ export default function Header({ locale }: { locale: Locale }) {
         </div>
       </div>
       {open && (
-        <div className="lg:hidden bg-white/95 backdrop-blur-xl border-t border-sg-line max-h-[calc(100vh-80px)] overflow-y-auto">
+        <div className="xl:hidden bg-white/95 backdrop-blur-xl border-t border-sg-line max-h-[calc(100vh-80px)] overflow-y-auto">
           {nav.map((item) => (
             <div key={item.id} className="border-b border-sg-line">
               <button className="w-full flex items-center justify-between px-5 py-4 text-left text-[16px] font-semibold" onClick={() => setMobile(mobile === item.id ? null : item.id)} aria-expanded={mobile === item.id}>

@@ -29,7 +29,7 @@ export default function ReservationCalendar({ y, m, rows, ko, title, prevHref, n
         {Array.from({ length: days }, (_, i) => i + 1).map((d) => {
           const ds = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
           return (
-            <div key={d} className={`border-b border-r border-sg-line p-1.5 ${ds === todayStr ? 'bg-sg-red/5' : ''}`}>
+            <div key={d} className={`border-b border-r border-sg-line p-1.5 ${ds === todayStr ? 'bg-[rgba(175,39,47,0.05)]' : ''}`}>
               <span className={`font-mono text-[12px] ${(first + d - 1) % 7 === 0 ? 'text-sg-red' : ''}`}>{d}</span>
               <ul className="mt-1 space-y-1">{(byDay[d] || []).map((r) => {
                 const cls = `block text-[11px] leading-tight px-1 py-0.5 border-l-2 break-keep ${r.status === 'approved' ? 'border-sg-red bg-white' : 'border-dashed border-sg-cardinal bg-sg-mist text-sg-gray11'} ${itemHref ? 'hover:bg-sg-mist hover:text-sg-cardinal cursor-pointer' : ''}`;
