@@ -2,12 +2,14 @@
 
 마지막 갱신: 2026-09-25
 
-## 완료 (2026-09-25) — 백업 기능 (자동 백업·휴지통·수정 이력) — R2 설정 대기
+## 완료 (2026-09-25) — 백업 기능 (자동 백업·휴지통·수정 이력) — 운영 중
 - **휴지통(동작 중)**: 관리자에서 글을 삭제하면 행 전체를 Supabase 비공개 저장소 `vault`의 `trash/posts/<id>.json`에 보관하고, 첨부·본문 파일은 지우지 않는다. 관리자 › 백업·휴지통에서 **복구**(같은 번호로 되살림)·**영구 삭제**. 30일 지나면 매일 백업 작업이 파일까지 정리(다른 글이 쓰는 파일은 남김, `lib/media.ts removeOwnMedia`).
 - **수정 이력(동작 중)**: 글을 저장할 때마다 직전 행 전체를 `vault/history/posts/<id>/<시각>.json`에 보관(글마다 최근 20개·90일). 글 수정 화면 맨 아래 ‘수정 이력’에서 **이 버전으로 되돌리기**(지금 내용도 이력에 남긴 뒤 되돌림).
 - **자동 백업(R2 환경변수 입력 후 켜짐)**: `/api/cron/backup` 매일 04:00 KST(vercel.json). `lib/backup.ts`·`lib/r2.ts`(aws4fetch, S3 서명). R2 버킷 `R2_BACKUP_BUCKET`에 `db/daily/YYYY-MM-DD.json.gz`(DB 표 8개 전체, 압축 약 2MB, 전날과 같으면 저장 생략, 30일) + `db/monthly/YYYY-MM.json.gz`(12개월) + `files/media/…`(Supabase 업로드 파일, 새 것만) + `files/r2/…`(옛 홈페이지 R2 공개 버킷 `R2_MEDIA_BUCKET`=sogang-me-media 서버 간 복사, 8개 동시·실행당 최대 4분, 끝날 때까지 매일 이어서). 상태는 `site_settings` key `backup`. 관리자 대시보드에 이틀 넘게 성공 없으면 경고, 백업 화면에 '지금 백업'·내려받기(관리자만, 5분 서명 주소 `/api/admin/backup/download`). Supabase 전송량: 전체 덤프가 압축 전송 1.2MB → 월 36MB.
   - **필요한 설정(책임자)**: Cloudflare R2 버킷 `sogang-me-backup`(비공개) + API 토큰(Object Read & Write, 대상 sogang-me-backup·sogang-me-media) → Vercel 환경변수 `R2_ACCOUNT_ID`·`R2_ACCESS_KEY_ID`·`R2_SECRET_ACCESS_KEY`·`R2_BACKUP_BUCKET`(=sogang-me-backup) → 재배포. 이 컨테이너의 AWS_* 키는 R2 키가 아님(길이 14).
-  - **설정 후 할 일(다음 세션)**: 관리자 세션으로 '지금 백업' 실행 → 백업 화면에 성공·크기 표시, `db/daily` 파일 내려받아 `gunzip` 확인. R2 요청 코드(`lib/r2.ts`)는 실제 R2로 아직 시험하지 못했다.
+  - **설정 완료·검증(9/25)**: 책임자가 R2 버킷·토큰(대상 sogang-me-backup·sogang-me-media)·Vercel 환경변수 입력. 라이브 실행 결과 `db/daily/2026-09-25.json.gz` 2.05MB 저장, 관리자 내려받기(302→서명 주소 200)·`scripts/restore-backup.mjs` 미리보기 정상, 서명 없는 접근 400(비공개 확인). 옛 파일 사본은 키 순서로 이어서 복사 중(9/25 기준 1,128개, 실패 0 — 실행당 수백 개, 매일 04:00 자동 계속, 끝나면 `legacyDone`).
+  - 시행착오 기록: ① 첫 실행이 함수 시간 초과로 기록 없이 끊김 → 단계별 기록(`stage`)·R2 요청별 시간 제한 ② 서비스 연결의 조회가 Next 데이터 캐시로 읽혀 진행 표시(legacyAfter)가 매번 비어 보임 → `lib/vault.ts serviceClient`에 `cache: 'no-store'` ③ aws4fetch의 Request 경유 전송이 본문을 스트림으로 바꿔 R2가 411(MissingContentLength) → 서명만 하고 원본 바이트로 fetch ④ 큰 파일 복사가 25초 제한에 걸려 멈춤 → 복사는 150초, 실패 파일은 `legacyFailed`에 기록하고 건너뜀(전체를 훑은 뒤 재시도).
+  - 수동 실행: 관리자 › 백업·휴지통 '지금 백업', 또는 `curl -A "vercel-cron/1.0" https://me.sogang.ac.kr/api/cron/backup`(CRON_SECRET 미설정 시, 1시간 2회 제한).
 - **복원**: 사이트 전체 되돌리기는 버튼 없음(실수 방지). `node scripts/restore-backup.mjs <파일.json.gz> [--table posts --id 123] [--apply]` — 기본은 미리보기, upsert로 반영, 끝나면 `/api/admin/revalidate`.
 - **같이 고친 것**: 파비콘이 없어 `/favicon.ico` 요청이 `[locale]` 홈 경로로 들어가 매번 500 오류 → 학교 방패 문장으로 `app/favicon.ico`·`icon.png`·`apple-icon.png` 추가, 홈 페이지에 언어 아닌 주소는 404 처리.
 - 로컬 E2E(관리자 세션, 비공개 시험 글): 저장→수정 이력 1건→되돌리기→삭제→휴지통 표시→복구→재삭제→영구 삭제→대시보드 알림 모두 통과, 시험 글·이력은 정리함.
