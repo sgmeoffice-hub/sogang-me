@@ -18,7 +18,14 @@ const url = (bucket: string, key = '') => `${endpoint()}/${bucket}${key ? '/' + 
 const unxml = (s: string) => s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&amp;/g, '&');
 
 /** R2 요청 하나가 멈춰 전체 작업이 시간 초과되지 않도록 25초 제한 */
-const call = (u: string, init: RequestInit = {}) => aws().fetch(u, { ...init, signal: AbortSignal.timeout(25_000) } as any);
+// 서명만 aws4fetch로 하고 전송은 원래 데이터(Uint8Array)를 그대로 보낸다 — Request 객체를 거치면 본문이 스트림이 되어
+// Content-Length가 빠지고 R2가 411(MissingContentLength)로 거절한다(2026-09-25)
+async function call(u: string, init: RequestInit = {}) {
+  const signed = await aws().sign(u, init as any);
+  const headers = new Headers(signed.headers);
+  if (init.body instanceof Uint8Array) headers.set('content-length', String(init.body.byteLength));
+  return fetch(signed.url, { method: signed.method, headers, body: init.body as any, signal: AbortSignal.timeout(25_000), cache: 'no-store' } as any);
+}
 async function ok(res: Response, what: string) {
   if (!res.ok) throw new Error(`R2 ${what} 실패 (${res.status}) ${(await res.text()).slice(0, 200)}`);
   return res;
