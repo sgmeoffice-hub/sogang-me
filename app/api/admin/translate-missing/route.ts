@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/supabase-server';
 import { fillMissingTranslations } from '@/lib/translate-backfill';
+import { refreshSite } from '@/lib/refresh';
 
 export const maxDuration = 60;
 
@@ -15,7 +15,7 @@ export async function POST() {
   if (!ok) return NextResponse.json({ error: 'forbidden' }, { status: 403 });
   try {
     const r = await fillMissingTranslations(sb as any, { days: 60, limit: 4, budgetMs: 40_000 });
-    if (r.done) revalidatePath('/', 'layout');
+    if (r.done) refreshSite();
     return NextResponse.json(r);
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || 'failed' }, { status: 500 });

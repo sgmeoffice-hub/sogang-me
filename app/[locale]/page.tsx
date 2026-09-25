@@ -9,7 +9,7 @@ import { areas } from '@/content/areas';
 import { assets, heroFieldVideos } from '@/content/assets';
 import { youtubeThumb } from '@/lib/html';
 
-export const revalidate = 600; // 관리자 저장 시 즉시 갱신되므로 길게
+export const revalidate = 3600; // 관리자 저장 시 즉시 갱신되므로 길게(10분 → 1시간, 2026-09-25 전송량 절감)
 
 export default async function Home({ params }: { params: { locale: Locale } }) {
   const l = params.locale; const ko = l === 'ko';

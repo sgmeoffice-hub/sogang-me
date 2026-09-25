@@ -3,7 +3,7 @@ import { nav } from '@/lib/nav';
 import { createPublicClient } from '@/lib/supabase-server';
 
 // 게시글이 수시로 추가되므로 한 시간마다 재생성한다
-export const revalidate = 3600;
+export const revalidate = 86400; // 하루 1회(검색엔진용, 2026-09-25 전송량 절감)
 
 const LOCALES = ['ko', 'en'] as const;
 

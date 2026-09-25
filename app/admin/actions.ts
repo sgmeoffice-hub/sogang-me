@@ -1,7 +1,6 @@
 'use server';
 import { syncFacultyNameInPosts } from '@/lib/names-sync';
 import { clearFacultyNamesCache } from '@/lib/names';
-import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase-server';
 import { translateKoToEn } from '@/lib/translate';
@@ -10,6 +9,7 @@ import { researchGroupDefs } from '@/lib/groups';
 import { buildingOf } from '@/lib/buildings';
 import { facilities } from '@/lib/nav';
 import { isHalfHour, isDateStr, repeatDates, REPEAT_MAX, type Repeat } from '@/lib/reservation';
+import { refreshSite } from '@/lib/refresh';
 
 import { adminBase as base } from '@/lib/admin';
 
@@ -115,7 +115,7 @@ export async function savePost(fd: FormData) {
 
   const q = id ? sb.from('posts').update(row).eq('id', Number(id)) : sb.from('posts').insert(row);
   const { error } = await q; if (error) throw new Error(error.message);
-  revalidatePath('/', 'layout');
+  refreshSite();
   redirect(`${base()}/posts?board=${row.board}`);
 }
 
@@ -143,7 +143,7 @@ export async function deletePost(fd: FormData) {
     const paths = mediaPaths(own);
     if (paths.length) await sb.storage.from('media').remove(paths);
   }
-  await sb.from('posts').delete().eq('id', id); revalidatePath('/', 'layout'); redirect(`${base()}/posts?board=${board}`);
+  await sb.from('posts').delete().eq('id', id); refreshSite(); redirect(`${base()}/posts?board=${board}`);
 }
 
 export async function saveFaculty(fd: FormData) {
@@ -197,13 +197,13 @@ export async function saveFaculty(fd: FormData) {
   if (row.name_ko && row.name_en && (!before || before.name_en !== row.name_en || before.lab_en !== row.lab_en)) {
     await syncFacultyNameInPosts(sb as any, { ko: row.name_ko, en: row.name_en, labKo: row.lab_ko, labEn: row.lab_en }).catch(() => 0);
   }
-  revalidatePath('/', 'layout'); redirect(`${base()}/faculty`);
+  refreshSite(); redirect(`${base()}/faculty`);
 }
 export async function deleteFaculty(fd: FormData) {
   const sb = await admin(); const id = Number(str(fd, 'id'));
   const { data: row } = await sb.from('faculty').select('photo_url').eq('id', id).single();
   if (row?.photo_url) await removeMedia(sb, { thumbnail_url: row.photo_url });
-  await sb.from('faculty').delete().eq('id', id); revalidatePath('/', 'layout'); redirect(`${base()}/faculty`);
+  await sb.from('faculty').delete().eq('id', id); refreshSite(); redirect(`${base()}/faculty`);
 }
 
 export async function savePage(fd: FormData) {
@@ -218,11 +218,11 @@ export async function savePage(fd: FormData) {
     if (need) { const out = await translateKoToEn({ content: row.content_ko }); if (out?.content) row.content_en = out.content; }
   }
   const { error } = await sb.from('pages').upsert(row); if (error) throw new Error(error.message);
-  revalidatePath('/', 'layout'); redirect(`${base()}/pages`);
+  refreshSite(); redirect(`${base()}/pages`);
 }
 
 export async function resetPage(fd: FormData) {
-  const sb = await admin(); await sb.from('pages').delete().eq('slug', str(fd, 'slug')); revalidatePath('/', 'layout'); redirect(`${base()}/pages`);
+  const sb = await admin(); await sb.from('pages').delete().eq('slug', str(fd, 'slug')); refreshSite(); redirect(`${base()}/pages`);
 }
 
 /* ───────── 시설 예약 (관리자) ─────────
@@ -248,7 +248,7 @@ export async function setReservation(fd: FormData) {
   const sb = await admin(); const id = Number(str(fd, 'id')); const status = str(fd, 'status');
   if (status === 'delete') await sb.from('reservations').delete().eq('id', id);
   else if (['approved', 'rejected', 'pending'].includes(status)) await sb.from('reservations').update({ status }).eq('id', id);
-  revalidatePath('/', 'layout'); redirect(safeBack(str(fd, 'back')));
+  refreshSite(); redirect(safeBack(str(fd, 'back')));
 }
 
 /** 직접 등록(즉시 확정). 반복(매주/격주)이면 종료일까지 여러 날짜를 한 번에 넣고, 겹치는 날짜만 건너뛰어 결과를 알려준다. */
@@ -268,7 +268,7 @@ export async function addReservation(fd: FormData) {
   let note = rows.length ? `${rows.length}건 등록했습니다.` : '';
   if (clashDates.size) note += `${note ? ' ' : ''}겹치는 예약이 있어 건너뜀: ${(clashes || []).map(fmtClash).join(', ')}`;
   if (repeat !== 'none' && dates.length >= REPEAT_MAX) note += ` (반복은 최대 ${REPEAT_MAX}건까지)`;
-  revalidatePath('/', 'layout');
+  refreshSite();
   redirect(resvUrl(r.facility, r.date, { note }));
 }
 
@@ -289,7 +289,7 @@ export async function updateReservation(fd: FormData) {
   }
   const { error } = await sb.from('reservations').update({ ...r, ...(status ? { status } : {}) }).eq('id', id);
   if (error) throw new Error(error.message);
-  revalidatePath('/', 'layout');
+  refreshSite();
   redirect(resvUrl(r.facility, r.date, { note: '수정했습니다.' }));
 }
 
@@ -300,20 +300,20 @@ export async function saveSettings(fd: FormData) {
   const ordered = [...order.filter((s) => sections.includes(s)), ...sections.filter((s) => !order.includes(s))];
   const value = { sections: ordered, news_count: Number(str(fd, 'news_count') || 8), tagline_ko: nul(str(fd, 'tagline_ko')), tagline_en: nul(str(fd, 'tagline_en')), hero_video_url: nul(str(fd, 'hero_video_url')), hero_poster_url: nul(str(fd, 'hero_poster_url')), notify_email: nul(str(fd, 'notify_email')) };
   const { error } = await sb.from('site_settings').upsert({ key: 'home', value, updated_at: new Date().toISOString() });
-  if (error) throw new Error(error.message); revalidatePath('/', 'layout'); redirect(`${base()}/settings`);
+  if (error) throw new Error(error.message); refreshSite(); redirect(`${base()}/settings`);
 }
 
 export async function saveBanner(fd: FormData) {
   const sb = await admin(); const id = str(fd, 'id');
   const row: any = { title_ko: nul(str(fd, 'title_ko')), title_en: nul(str(fd, 'title_en')), subtitle_ko: nul(str(fd, 'subtitle_ko')), subtitle_en: nul(str(fd, 'subtitle_en')), image_url: nul(str(fd, 'image_url')), link: nul(str(fd, 'link')), sort_order: Number(str(fd, 'sort_order') || 100), visible: bool(fd, 'visible') };
   const q = id ? sb.from('banners').update(row).eq('id', Number(id)) : sb.from('banners').insert(row);
-  const { error } = await q; if (error) throw new Error(error.message); revalidatePath('/', 'layout'); redirect(`${base()}/banners`);
+  const { error } = await q; if (error) throw new Error(error.message); refreshSite(); redirect(`${base()}/banners`);
 }
 export async function deleteBanner(fd: FormData) {
   const sb = await admin(); const id = Number(str(fd, 'id'));
   const { data: row } = await sb.from('banners').select('image_url').eq('id', id).single();
   if (row?.image_url) await removeMedia(sb, { thumbnail_url: row.image_url });
-  await sb.from('banners').delete().eq('id', id); revalidatePath('/', 'layout'); redirect(`${base()}/banners`);
+  await sb.from('banners').delete().eq('id', id); refreshSite(); redirect(`${base()}/banners`);
 }
 export async function addAdmin(fd: FormData) {
   const sb = await admin(); const email = str(fd, 'email').trim().toLowerCase();

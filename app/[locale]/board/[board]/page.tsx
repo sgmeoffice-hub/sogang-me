@@ -7,7 +7,7 @@ import { boards, boardSection } from '@/lib/nav';
 import { t, T, authorLabel, type Locale } from '@/lib/i18n';
 import { notFound } from 'next/navigation';
 import { facultyNames, peopleEn } from '@/lib/names';
-export const revalidate = 60;
+export const revalidate = 600; // 60초 → 10분(2026-09-25 Supabase 전송량 절감): 글 저장·삭제는 즉시 갱신되고, 목록의 조회수만 최대 10분 늦게 바뀐다
 const PER = 15;
 const intros: Record<string, [string, string]> = {
   promo: ['고등학생·자유전공학부 학생을 위한 기계공학과 소개 자료입니다. 클릭하면 자료 소개와 PDF 열람·다운로드로 이동합니다.', 'Introductory materials for prospective and liberal-major students. Open a card to read more or download the PDF.'],

@@ -11,6 +11,7 @@ import { formatOffice } from '@/lib/buildings';
 import type { Locale } from '@/lib/i18n';
 import { notFound } from 'next/navigation';
 export const revalidate = 3600;
+export function generateStaticParams() { return []; }   // 선언해야 요청 시 만든 페이지가 캐시된다(ISR) — 없으면 매 요청 DB 조회(2026-09-25)
 
 export default async function Grad({ params }: { params: { locale: Locale; slug: string } }) {
   const { locale: l, slug } = params; const ko = l === 'ko';

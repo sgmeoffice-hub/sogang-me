@@ -9,6 +9,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { toHtml } from '@/lib/html';
 export const revalidate = 3600;
+export function generateStaticParams() { return []; }   // 선언해야 요청 시 만든 페이지가 캐시된다(ISR) — 없으면 매 요청 DB 조회(2026-09-25)
 
 /** 교수 상세. 연구분야 설명·약력(research/bio)이 비어 있는 분이 대부분이라(2026-09 기준 전임 18명 중 0·1명),
  *  본문 칸을 비워 두는 2단 구성 대신 사진+연락처 프로필 카드를 한 덩어리로 짜고, 아래에 소속 분야 소개와

@@ -1,3 +1,4 @@
+import { unstable_cache } from 'next/cache';
 import { createPublicClient } from './supabase-server';
 import type { Post } from '@/components/PostCard';
 import { safeQuery } from './search';
@@ -38,7 +39,7 @@ export async function getHomeData() {
   return { groups, gallery, banners, settings: settings?.value ?? {}, promo, videos, latest };
 }
 
-export async function getPosts(board: string, page = 1, per = 15, q = '') {
+async function getPostsRaw(board: string, page = 1, per = 15, q = '') {
   const sb = createPublicClient();
   let query = sb.from('posts').select('id,board,title_ko,title_en,excerpt_ko,excerpt_en,thumbnail_url,images,created_at,is_pinned,view_count,author,attachments,video_url,term,members,advisor,category,category_en,sort_order', { count: 'exact' })
     .eq('board', board).eq('published', true);
@@ -52,9 +53,19 @@ export async function getPosts(board: string, page = 1, per = 15, q = '') {
   }
   return { posts: (data || []) as Post[], total: count || 0 };
 }
-export async function getPost(id: number) {
+/** 게시판 목록은 ?page=·?q= 때문에 요청마다 새로 그려지므로 조회 결과를 10분 캐시한다(저장 시 refreshSite로 즉시 비움).
+ *  2026-09-25: 페이지·조회 캐시가 없어 방문마다 DB를 읽던 것이 Supabase 전송량(무료 5GB의 67%)의 주원인이었다. */
+export const getPosts = unstable_cache(getPostsRaw, ['getPosts'], { revalidate: 600, tags: ['site'] });
+/** 게시글 상세 — 보는 언어의 본문만 읽는다(두 언어 본문을 다 읽던 것의 약 절반, 2026-09-25 Supabase 전송량 절감).
+ *  영문 페이지는 영문 본문이 비었을 때만 국문 본문을 한 번 더 읽는다(번역 없음 안내·국문 대체 표시용). */
+const POST_COLS = 'id,board,title_ko,title_en,excerpt_ko,excerpt_en,thumbnail_url,images,attachments,created_at,is_pinned,view_count,author,video_url,term,members,advisor,category,category_en,sort_order,published';
+export async function getPost(id: number, locale: 'ko' | 'en' = 'ko') {
   const sb = createPublicClient();
-  const { data } = await sb.from('posts').select('*').eq('id', id).eq('published', true).single();
+  const { data } = await sb.from('posts').select(`${POST_COLS},content_${locale}`).eq('id', id).eq('published', true).single();
+  if (data && locale === 'en' && !(data as any).content_en) {
+    const { data: ko } = await sb.from('posts').select('content_ko').eq('id', id).single();
+    (data as any).content_ko = ko?.content_ko ?? null;
+  }
   return data as Post | null;
 }
 export async function getAdjacent(board: string, id: number, created: string) {
@@ -70,7 +81,8 @@ export async function getAdjacent(board: string, id: number, created: string) {
   ]);
   return { prev: prev?.[0] || null, next: next?.[0] || null };
 }
-export async function getFaculty(emeritus = false) {
+export const getFaculty = unstable_cache(getFacultyRaw, ['getFaculty'], { revalidate: 3600, tags: ['site'] });
+async function getFacultyRaw(emeritus = false) {
   const sb = createPublicClient();
   let query = sb.from('faculty').select('*').eq('is_emeritus', emeritus).eq('published', true);
   // 석좌교수(field='chair')는 전임교수 목록에서 제외하고 전용 페이지에서만 노출한다.
@@ -90,7 +102,8 @@ export async function getFacultyOne(id: number) {
 export async function getPage(slug: string) {
   const sb = createPublicClient(); const { data } = await sb.from('pages').select('*').eq('slug', slug).maybeSingle(); return data;
 }
-export async function getReservations(facility: string, year: number, month: number) {
+export const getReservations = unstable_cache(getReservationsRaw, ['getReservations'], { revalidate: 3600, tags: ['site', 'reservations'] });
+async function getReservationsRaw(facility: string, year: number, month: number) {
   const sb = createPublicClient();
   const start = `${year}-${String(month).padStart(2, '0')}-01`;
   const endD = new Date(year, month, 0).getDate();

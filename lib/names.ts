@@ -1,3 +1,4 @@
+import { unstable_cache } from 'next/cache';
 import { createPublicClient } from './supabase-server';
 import type { NameRow } from './names-core';
 import { koNamesToEn } from './names-core';
@@ -9,15 +10,25 @@ export { namesIn, namesPrompt, enforceNames, koNamesToEn, type NameRow } from '.
  *  ① 프롬프트 용어집 ② 후처리 치환(lib/names-core.ts) 두 겹으로 막는다 (2026-09-24 책임자 요청). 교수 정보를 /adm에서 고치면 10분 안에 반영. */
 let cache: { at: number; rows: NameRow[] } | null = null;
 /** 관리자가 교수 정보를 저장하면 바로 새 이름표를 쓰도록 캐시를 비운다(같은 서버 인스턴스 기준, 나머지는 10분 안에 갱신) */
-export function clearFacultyNamesCache() { cache = null; }
+export function clearFacultyNamesCache() { cache = null; fresh = true; }
+let fresh = false;
+
+async function readFacultyNames(): Promise<NameRow[]> {
+  const sb = createPublicClient();
+  const { data, error } = await sb.from('faculty').select('name_ko,name_en,lab_ko,lab_en').eq('published', true);
+  if (error) throw new Error(error.message);
+  return (data || []).filter((r: any) => r.name_ko && r.name_en)
+    .map((r: any) => ({ ko: String(r.name_ko).trim(), en: String(r.name_en).trim().replace(/\s+/g, ' '), labKo: r.lab_ko, labEn: r.lab_en }));
+}
+/** 요청마다 새로 그리는 목록·예약 페이지에서도 DB를 매번 읽지 않도록 1시간 캐시(태그 'site' — 교수 저장 시 refreshSite로 비움) */
+const facultyNamesCached = unstable_cache(readFacultyNames, ['facultyNames'], { revalidate: 3600, tags: ['site'] });
 
 export async function facultyNames(): Promise<NameRow[]> {
   if (cache && Date.now() - cache.at < 10 * 60 * 1000) return cache.rows;
   try {
-    const sb = createPublicClient();
-    const { data } = await sb.from('faculty').select('name_ko,name_en,lab_ko,lab_en').eq('published', true);
-    const rows: NameRow[] = (data || []).filter((r: any) => r.name_ko && r.name_en)
-      .map((r: any) => ({ ko: String(r.name_ko).trim(), en: String(r.name_en).trim().replace(/\s+/g, ' '), labKo: r.lab_ko, labEn: r.lab_en }));
+    // 관리자가 교수 정보를 저장한 직후에는 캐시를 건너뛰고 DB에서 바로 읽는다(새 이름을 곧바로 번역에 쓰기 위해)
+    const rows = fresh ? await readFacultyNames() : await facultyNamesCached();
+    fresh = false;
     cache = { at: Date.now(), rows };
     return rows;
   } catch { return cache?.rows ?? []; }

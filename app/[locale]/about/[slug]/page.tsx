@@ -4,6 +4,8 @@ import type { Locale } from '@/lib/i18n';
 import { notFound } from 'next/navigation';
 
 export const revalidate = 3600;
+// 빈 배열이라도 선언해야 요청 시 한 번 만든 페이지를 캐시(ISR)한다 — 없으면 매 요청 DB 조회(2026-09-25 Supabase 전송량 원인)
+export function generateStaticParams() { return []; }
 
 export default async function AboutPage({ params }: { params: { locale: Locale; slug: string } }) {
   const { locale: l, slug } = params;

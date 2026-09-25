@@ -2,6 +2,13 @@
 
 마지막 갱신: 2026-09-25
 
+## 완료 (2026-09-25) — Supabase 전송량(Egress) 절감: 페이지·조회 캐시가 거의 안 되던 문제
+- **발견**: Supabase 무료 플랜 사용량(8/26~9/26) Egress 3.33/5GB(67%). 라이브 응답 헤더를 보니 홈·사이트맵만 캐시(HIT)되고 게시판 목록·게시글 상세·교수 상세·학과소개 등 나머지는 전부 `private, no-store`(MISS) — 방문·크롤러 요청마다 서버가 DB를 다시 읽고 있었다(지난 Vercel 한도 초과에도 기여했을 것).
+  - 원인 ① 동적 경로(`[slug]`, `[id]`) 페이지에 `generateStaticParams`가 없으면 Next 14는 `revalidate`가 있어도 매 요청 새로 그린다(빌드 표시 ƒ) ② `searchParams`를 읽는 페이지(게시판 목록 ?page·?q, 예약 ?f·y·m, 교수진 ?field)는 구조상 매 요청 렌더링.
+- **조치**: ① 동적 경로 8곳에 `export function generateStaticParams() { return []; }` → 첫 요청 때 만들어 캐시(ISR, 빌드 표시 ●). 로컬 확인: 첫 요청 MISS → 이후 HIT ② 목록·예약·교수 조회 결과를 `unstable_cache`(태그 `site`)로 캐시(`lib/data.ts` getPosts 10분·getFaculty 1시간·getReservations 1시간, `lib/names.ts` facultyNames 1시간) ③ 저장 시 갱신을 `refreshSite()`(`lib/refresh.ts` = `revalidatePath('/', 'layout')` + `revalidateTag('site')`)로 통일 — 관리자 저장·자동 번역·`/api/admin/revalidate` 모두. 예약 신청(`/api/reservations`)은 `revalidateTag('reservations')`+예약 페이지만 갱신 ④ 주기: 게시글 상세 1시간→1일, 홈 10분→1시간, 게시판 목록 1분→10분(목록 조회수만 최대 10분 지연), 예약 30초→1시간(신청·처리 시 즉시 갱신), 사이트맵 1시간→1일 ⑤ 게시글 상세는 보는 언어 본문만 조회(평균 5.8KB→3.2KB).
+- **주의(앞으로)**: 새 동적 경로 페이지를 만들면 `generateStaticParams`를 꼭 넣을 것. 라이브 확인은 `curl -sI URL | grep -i x-vercel-cache`(HIT/STALE이어야 정상, MISS가 계속이면 캐시 안 됨). DB를 REST로 일괄 수정한 뒤에는 `/api/admin/revalidate` 호출.
+- **백업(보류, 다음 작업)**: 책임자와 설계 합의 — Cloudflare R2 비공개 버킷 `sogang-me-backup`에 매일 DB(원본 5~13MB, 압축 2.2MB) 보관(최근 30일 매일 + 12개월 월별 ≈ 90MB), 매일은 바뀐 것만·주 1회 전체(Supabase 전송량 월 ~60MB), 관리자 업로드 파일은 새 파일만 증분, 옛 R2 파일(게시글이 쓰는 3,229개 1.28GB)은 1회 서버 간 복사, 휴지통(삭제 30일 보관·복구)·수정 이력. 필요: 책임자가 R2 버킷·토큰 생성 후 Vercel 환경변수 `R2_ACCOUNT_ID`·`R2_ACCESS_KEY_ID`·`R2_SECRET_ACCESS_KEY`·`R2_BACKUP_BUCKET` 입력.
+
 ## 완료 (2026-09-25) — 사이트 전체 glitch 점검·수정 (책임자: "곳곳에 glitch 있을 것 같은데 홈페이지 쫙 훑으면서 전부 수정", "관리자 페이지도")
 - **점검 방법**: 공개 페이지 국/영 264쪽 크롤링(상태 코드·영문 페이지 한글·undefined/NaN 노출·깨진 링크/이미지) → Playwright로 390/1024/1280px 넘침·콘솔 오류 → 표·긴 URL·고정 폭이 있는 게시글 1,012쪽 전수 + 무작위 300쪽 → 관리자 전 메뉴·대표 편집 화면(국/영 게시판 14종, 교수진, 페이지, 예약, URECA, 배너, 설정) 1280/390 + 스크린샷 검토 → 컴파일된 CSS에 없는 Tailwind 클래스 전수 대조.
   - 점검 도구 주의: 모바일 에뮬레이션(isMobile)은 내용이 넓으면 화면을 자동 축소해 innerWidth=scrollWidth가 되므로 넘침이 안 잡힌다 → 폭 390 고정·isMobile 끔으로 측정. 컨테이너 Chromium은 프록시 인증서를 신뢰하지 않아 CDN 폰트(Pretendard)가 안 받아지므로 폭 측정은 로컬 폰트 사본으로(대체 글꼴은 더 넓다).

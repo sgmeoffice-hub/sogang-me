@@ -9,11 +9,12 @@ import ViewCounter from '@/components/ViewCounter';
 import { toHtml, wrapTables, downloadUrl } from '@/lib/html';
 import { boardSection, festivalCategories } from '@/lib/nav';
 import { facultyNames, peopleEn } from '@/lib/names';
-export const revalidate = 3600; // 관리자 저장 시 즉시 갱신되므로 길게 — 4,700여 글을 크롤러가 훑을 때 함수 호출을 줄인다
+export function generateStaticParams() { return []; }   // 선언해야 요청 시 만든 페이지가 캐시된다(ISR) — 없으면 매 요청 DB 조회
+export const revalidate = 86400; // 관리자 저장·자동 번역·일괄 수정(/api/admin/revalidate) 때 즉시 갱신되므로 하루 — 4,700여 글을 크롤러가 훑을 때 DB 전송량을 줄인다(2026-09-25)
 
 export default async function PostPage({ params }: { params: { locale: Locale; board: string; id: string } }) {
   const { locale: l, board } = params; const ko = l === 'ko';
-  const p = await getPost(Number(params.id)); if (!p || p.board !== board) notFound();
+  const p = await getPost(Number(params.id), l); if (!p || p.board !== board) notFound();
   const { prev, next } = await getAdjacent(board, p.id, p.created_at);
   const html = wrapTables(toHtml(t(p, 'content', l)));
   const [section, current] = boardSection[board] || ['board', board];

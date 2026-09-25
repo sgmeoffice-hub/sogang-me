@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { createPublicClient } from '@/lib/supabase-server';
 import { notifyAdmin } from '@/lib/notify';
 import { facilities } from '@/lib/nav';
@@ -60,6 +61,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: '방금 같은 시간에 다른 신청이 접수되었습니다. 다른 시간을 선택해 주세요.' }, { status: 409 });
     }
   }
+  // 달력에 '승인 대기'가 바로 보이도록 예약 현황 페이지만 갱신(페이지는 1시간 캐시)
+  revalidateTag('reservations'); revalidatePath('/ko/reservation'); revalidatePath('/en/reservation');
   const fac = facilities.find((f) => f.id === row.facility)?.ko || row.facility;
   const site = process.env.NEXT_PUBLIC_SITE_URL || '';
   await notifyAdmin(`[기계공학과] 시설 예약 신청: ${fac} ${row.date} ${row.start_time}~${row.end_time}`,

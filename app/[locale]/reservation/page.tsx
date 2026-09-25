@@ -6,7 +6,7 @@ import { getReservations } from '@/lib/data';
 import { facilities } from '@/lib/nav';
 import { T, type Locale } from '@/lib/i18n';
 import { facultyNames, peopleEn } from '@/lib/names';
-export const revalidate = 30;
+export const revalidate = 3600; // 신청(/api/reservations)·관리자 처리 때 즉시 갱신되므로 30초 → 1시간(2026-09-25 전송량 절감)
 
 export default async function Reservation({ params, searchParams }: { params: { locale: Locale }; searchParams: { f?: string; y?: string; m?: string } }) {
   const l = params.locale; const ko = l === 'ko';

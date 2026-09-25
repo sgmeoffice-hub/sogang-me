@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { revalidatePath } from 'next/cache';
 import { createClient } from '@supabase/supabase-js';
 import { fillMissingTranslations } from '@/lib/translate-backfill';
 import { allow } from '@/lib/ratelimit';
+import { refreshSite } from '@/lib/refresh';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -24,7 +24,7 @@ export async function GET(req: Request) {
   const sb = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
   try {
     const r = await fillMissingTranslations(sb, { days: 60, limit: 8, budgetMs: 45_000 });
-    if (r.done) revalidatePath('/', 'layout');
+    if (r.done) refreshSite();
     return NextResponse.json(r);
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || 'failed' }, { status: 500 });
