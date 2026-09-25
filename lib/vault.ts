@@ -12,7 +12,9 @@ const BUCKET = 'vault';
 export function serviceClient(): SupabaseClient {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL; const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) throw new Error('SUPABASE_SERVICE_ROLE_KEY가 설정되지 않았습니다');
-  return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+  // 백업 진행 기록·휴지통 목록은 항상 최신이어야 하므로 Next.js 데이터 캐시를 쓰지 않는다
+  // (2026-09-25: 캐시된 '기록 없음' 응답 때문에 옛 파일 복사가 매번 처음부터 다시 시작되던 문제)
+  return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false }, global: { fetch: (input: any, init?: any) => fetch(input, { ...init, cache: 'no-store' }) } });
 }
 
 async function putJson(sb: SupabaseClient, path: string, data: unknown) {
