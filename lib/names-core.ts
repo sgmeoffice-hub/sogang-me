@@ -34,13 +34,25 @@ export function enforceNames(rows: NameRow[], s: string): string {
 
     const fams = [family.toLowerCase(), ...(FAMILY_ALIASES[family.toLowerCase()] || [])].map(esc).join('|');
     const sk = skeleton(given);
-    const cand = '[A-Z][a-z]+(?:[- ]?[A-Za-z][a-z]*)?'; // Chung-soo / Chung Soo / Chungsoo
     // 대소문자 무시로 찾되, 성·이름 모두 대문자로 시작하는 토큰만 인정한다 ("sin 함수" 같은 일반 단어 배제)
     const cap = (w: string) => /^[A-Z]/.test(w);
-    // 성 + 이름
-    out = out.replace(new RegExp(`(^|[^A-Za-z])(${fams}),?\\s+(${cand})(?![A-Za-z])`, 'gi'), (m, pre, fam, gv) => cap(fam) && cap(gv) && skeleton(gv) === sk ? pre + r.en : m);
-    // 이름 + 성
-    out = out.replace(new RegExp(`(^|[^A-Za-z])(${cand})\\s+(${fams})(?![A-Za-z])`, 'gi'), (m, pre, gv, fam) => cap(fam) && cap(gv) && skeleton(gv) === sk ? pre + r.en : m);
+    // 이름 후보는 '단어 1개(Chung-soo, Chungsoo)' 또는 '단어 2개(Chung Soo)'. 앞뒤 단어(Professor, was …)를 이름에 삼키지 않도록
+    // 최대 2단어를 잡은 뒤, 성에 붙은 쪽부터 1단어 → 2단어 순으로 골격을 맞춰 보고 맞는 부분만 바꾼다.
+    const word = '[A-Za-z][a-z]*(?:-[A-Za-z][a-z]*)?';
+    const matchGiven = (toks: string[]) => { for (const n of [1, 2]) { if (toks.length < n) break; const c = toks.slice(0, n); if (c.every(cap) && skeleton(c.join('')) === sk) return n; } return 0; };
+    // 성 + 이름 (+ 뒤따르는 단어)
+    out = out.replace(new RegExp(`(^|[^A-Za-z])(${fams}),?\\s+(${word}(?:\\s+${word})?)(?![A-Za-z])`, 'gi'), (m, pre, fam, gv) => {
+      if (!cap(fam)) return m;
+      const toks = gv.split(/\s+/); const n = matchGiven(toks);
+      return n ? pre + r.en + toks.slice(n).map((t: string) => ' ' + t).join('') : m;
+    });
+    // (앞선 단어 +) 이름 + 성
+    out = out.replace(new RegExp(`(^|[^A-Za-z])((?:${word}\\s+)?${word})\\s+(${fams})(?![A-Za-z])`, 'gi'), (m, pre, gv, fam) => {
+      if (!cap(fam)) return m;
+      // 성에 붙은 쪽(뒤)부터: 마지막 1단어, 안 되면 마지막 2단어
+      const toks = gv.split(/\s+/); const n = matchGiven(toks.slice(-1)) ? 1 : toks.length >= 2 && matchGiven([toks.slice(-2).join(' ')]) ? 2 : 0;
+      return n ? pre + toks.slice(0, toks.length - n).map((t: string) => t + ' ').join('') + r.en : m;
+    });
   }
   return out;
 }

@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase-server';
 import LoginForm from '@/components/admin/LoginForm';
 import { signOut } from './actions';
 import { adminBase } from '@/lib/admin';
+import TranslateRetry from '@/components/admin/TranslateRetry';
 
 export const dynamic = 'force-dynamic';
 export const metadata = { title: '관리자 · 서강대학교 기계공학과', robots: { index: false, follow: false } };
@@ -34,7 +35,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <form action={signOut}><button className="mt-2 text-[12px] underline text-white/70">로그아웃</button></form>
         <Link href="/ko" className="mt-6 block text-[12px] text-white/70 underline">사이트 보기 →</Link>
       </aside>
-      <main className="p-6 lg:p-10 bg-sg-mist/50 min-w-0">{children}</main>
+      <main className="p-6 lg:p-10 bg-sg-mist/50 min-w-0"><TranslateRetry />{children}</main>
     </div>
   );
 }
