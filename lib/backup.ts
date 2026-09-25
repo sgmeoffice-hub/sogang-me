@@ -19,7 +19,7 @@ const MONTHLY_KEEP = 12;
 export type BackupStatus = {
   at: string; ok: boolean; error?: string; trigger?: string;
   key?: string; bytes?: number; unchanged?: boolean; counts?: Record<string, number>;
-  mediaCopied?: number; legacyCopied?: number; legacyTotal?: number; legacyAfter?: string; legacyDone?: boolean; stage?: string; purged?: { trash: number; history: number };
+  mediaCopied?: number; legacyCopied?: number; legacyTotal?: number; legacyAfter?: string; legacyDone?: boolean; legacyFailed?: string[]; stage?: string; purged?: { trash: number; history: number };
   lastSuccessAt?: string; hash?: string;
 };
 
@@ -63,7 +63,7 @@ export async function runBackup(sb: SupabaseClient, trigger = 'cron', budgetMs =
   const prev = await readStatus(sb);
   const now = new Date(Date.now() + 9 * 3600e3);   // KST 날짜 기준
   const day = now.toISOString().slice(0, 10), month = day.slice(0, 7);
-  const status: BackupStatus = { at: new Date().toISOString(), ok: false, trigger, stage: 'start', lastSuccessAt: prev?.lastSuccessAt, hash: prev?.hash, legacyAfter: prev?.legacyAfter, legacyDone: prev?.legacyDone, legacyTotal: prev?.legacyTotal };
+  const status: BackupStatus = { at: new Date().toISOString(), ok: false, trigger, stage: 'start', lastSuccessAt: prev?.lastSuccessAt, hash: prev?.hash, legacyAfter: prev?.legacyAfter, legacyDone: prev?.legacyDone, legacyTotal: prev?.legacyTotal, legacyFailed: prev?.legacyFailed };
   // 단계마다 기록 — 도중에 시간 제한으로 끊겨도 어디까지 됐는지 남는다
   const checkpoint = async (stage: string) => { status.stage = stage; await writeStatus(sb, status).catch(() => {}); };
   try {
@@ -107,19 +107,29 @@ export async function runBackup(sb: SupabaseClient, trigger = 'cron', budgetMs =
     if (!status.legacyDone) {
       try {
         let copied = 0;
-        while (left() > 20_000) {
+        while (left() > 60_000) {   // 복사 한 건이 최대 150초 걸릴 수 있어 여유를 두고 시작(함수 제한 300초)
           const batch = await r2List('', mediaBucket(), 1000, status.legacyAfter || '');
           if (!batch.length) { status.legacyDone = true; break; }
-          for (let i = 0; i < batch.length && left() > 15_000; i += 8) {
+          for (let i = 0; i < batch.length && left() > 60_000; i += 8) {
             const chunk = batch.slice(i, i + 8);
-            await Promise.all(chunk.map((o) => r2Copy(mediaBucket(), o.key, `files/r2/${o.key}`)));
-            copied += chunk.length; status.legacyAfter = chunk[chunk.length - 1].key;
+            // 한 파일이 실패해도 전체가 멈추지 않게: 실패한 파일은 기록만 하고 넘어간다(다음에 legacyFailed로 재시도 가능)
+            const res = await Promise.allSettled(chunk.map((o) => r2Copy(mediaBucket(), o.key, `files/r2/${o.key}`)));
+            res.forEach((r, k) => { if (r.status === 'rejected') status.legacyFailed = [...(status.legacyFailed || []), chunk[k].key].slice(-200); else copied++; });
+            status.legacyAfter = chunk[chunk.length - 1].key;
           }
           status.legacyCopied = copied; status.legacyTotal = (prev?.legacyTotal || 0) + copied;
           await checkpoint('legacy');
           if (batch.length < 1000 && status.legacyAfter === batch[batch.length - 1].key) { status.legacyDone = true; break; }
         }
       } catch (e: any) { status.error = `옛 파일 사본: ${e?.message || e}`; }
+    }
+    // 모두 훑은 뒤에는 실패했던 파일만 다시 시도
+    if (status.legacyDone && status.legacyFailed?.length && left() > 30_000) {
+      const retry = status.legacyFailed; status.legacyFailed = [];
+      for (const k of retry) {
+        if (left() < 20_000) { status.legacyFailed.push(k); continue; }
+        try { await r2Copy(mediaBucket(), k, `files/r2/${k}`); status.legacyTotal = (status.legacyTotal || 0) + 1; } catch { status.legacyFailed.push(k); }
+      }
     }
     status.stage = 'done';
   } catch (e: any) {

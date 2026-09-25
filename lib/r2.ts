@@ -20,11 +20,11 @@ const unxml = (s: string) => s.replace(/&lt;/g, '<').replace(/&gt;/g, '>').repla
 /** R2 요청 하나가 멈춰 전체 작업이 시간 초과되지 않도록 25초 제한 */
 // 서명만 aws4fetch로 하고 전송은 원래 데이터(Uint8Array)를 그대로 보낸다 — Request 객체를 거치면 본문이 스트림이 되어
 // Content-Length가 빠지고 R2가 411(MissingContentLength)로 거절한다(2026-09-25)
-async function call(u: string, init: RequestInit = {}) {
+async function call(u: string, init: RequestInit = {}, timeoutMs = 25_000) {
   const signed = await aws().sign(u, init as any);
   const headers = new Headers(signed.headers);
   if (init.body instanceof Uint8Array) headers.set('content-length', String(init.body.byteLength));
-  return fetch(signed.url, { method: signed.method, headers, body: init.body as any, signal: AbortSignal.timeout(25_000), cache: 'no-store' } as any);
+  return fetch(signed.url, { method: signed.method, headers, body: init.body as any, signal: AbortSignal.timeout(timeoutMs), cache: 'no-store' } as any);
 }
 async function ok(res: Response, what: string) {
   if (!res.ok) throw new Error(`R2 ${what} 실패 (${res.status}) ${(await res.text()).slice(0, 200)}`);
@@ -39,7 +39,7 @@ export async function r2Delete(key: string, bucket = backupBucket()) {
 }
 /** 같은 계정 안의 버킷 간 서버 측 복사 — 내려받지 않으므로 전송 요금·시간이 들지 않는다 */
 export async function r2Copy(srcBucket: string, key: string, destKey: string, bucket = backupBucket()) {
-  await ok(await call(url(bucket, destKey), { method: 'PUT', headers: { 'x-amz-copy-source': `/${srcBucket}/${enc(key)}` } }), `복사(${key})`);
+  await ok(await call(url(bucket, destKey), { method: 'PUT', headers: { 'x-amz-copy-source': `/${srcBucket}/${enc(key)}` } }, 150_000), `복사(${key})`);   // 큰 파일(영상 등) 복사는 오래 걸릴 수 있다
 }
 export type R2Obj = { key: string; size: number; modified: string };
 /** 접두어 아래 목록(최대 limit개, startAfter 다음 키부터 — 큰 버킷을 여러 번에 나눠 읽을 때) */
