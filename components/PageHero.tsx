@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from '@/components/Link';
 import { nav, label, isExternal } from '@/lib/nav';
 import { T, type Locale } from '@/lib/i18n';
 import { sectionHero } from '@/content/assets';

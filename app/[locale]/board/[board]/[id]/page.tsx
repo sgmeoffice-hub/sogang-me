@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from '@/components/Link';
 import PageHero from '@/components/PageHero';
 import { fmtDate } from '@/components/PostCard';
 import { getPost, getAdjacent } from '@/lib/data';
@@ -10,7 +10,7 @@ import { toHtml, wrapTables, downloadUrl } from '@/lib/html';
 import { boardSection, festivalCategories } from '@/lib/nav';
 import { facultyNames, peopleEn } from '@/lib/names';
 export function generateStaticParams() { return []; }   // 선언해야 요청 시 만든 페이지가 캐시된다(ISR) — 없으면 매 요청 DB 조회
-export const revalidate = 86400; // 관리자 저장·자동 번역·일괄 수정(/api/admin/revalidate) 때 즉시 갱신되므로 하루 — 4,700여 글을 크롤러가 훑을 때 DB 전송량을 줄인다(2026-09-25)
+export const revalidate = 604800; // 관리자 저장·자동 번역·일괄 수정(/api/admin/revalidate) 때 즉시 갱신되므로 시간 기준 갱신은 1주 — 4,700여 글을 크롤러가 훑을 때 DB 전송량(2026-09-25)과 Vercel 무료 한도(재생성 CPU, 2026-09-26)를 아낀다
 
 export default async function PostPage({ params }: { params: { locale: Locale; board: string; id: string } }) {
   const { locale: l, board } = params; const ko = l === 'ko';

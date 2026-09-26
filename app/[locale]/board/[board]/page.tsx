@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from '@/components/Link';
 import PageHero from '@/components/PageHero';
 import PostCard, { fmtDate } from '@/components/PostCard';
 import { PromoView, CapstoneView, FestivalView, VideosView } from '@/components/BoardViews';

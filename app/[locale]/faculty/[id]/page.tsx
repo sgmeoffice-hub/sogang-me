@@ -6,9 +6,9 @@ import { emblemOf } from '@/components/FieldEmblems';
 import { researchGroupDefs } from '@/lib/groups';
 import { formatOffice } from '@/lib/buildings';
 import { notFound } from 'next/navigation';
-import Link from 'next/link';
+import Link from '@/components/Link';
 import { toHtml } from '@/lib/html';
-export const revalidate = 3600;
+export const revalidate = 86400; // 관리자 저장 때 즉시 갱신되므로 시간 기준 갱신은 하루(Vercel 무료 한도 절약, 2026-09-26)
 export function generateStaticParams() { return []; }   // 선언해야 요청 시 만든 페이지가 캐시된다(ISR) — 없으면 매 요청 DB 조회(2026-09-25)
 
 /** 교수 상세. 연구분야 설명·약력(research/bio)이 비어 있는 분이 대부분이라(2026-09 기준 전임 18명 중 0·1명),

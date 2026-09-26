@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from '@/components/Link';
 import { monthRange } from '@/lib/reservation';
 
 export type CalRow = { id: number; date: string; start_time: string; end_time: string; user_name: string; status: string; purpose?: string | null };

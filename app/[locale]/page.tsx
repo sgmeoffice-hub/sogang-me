@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import Link from 'next/link';
+import Link from '@/components/Link';
 import HeroVideo from '@/components/HeroVideo';
 import NewsRows from '@/components/NewsRows';
 import Reveal from '@/components/Reveal';

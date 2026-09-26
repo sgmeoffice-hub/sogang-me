@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from '@/components/Link';
 import YouTube from './YouTube';
 import { type Post, fmtDate } from './PostCard';
 import { t, type Locale } from '@/lib/i18n';

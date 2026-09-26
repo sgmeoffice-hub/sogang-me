@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from '@/components/Link';
 import { t, T, type Locale } from '@/lib/i18n';
 import { coverFor } from '@/lib/placeholder';
 import { boardTint } from '@/lib/board-colors';

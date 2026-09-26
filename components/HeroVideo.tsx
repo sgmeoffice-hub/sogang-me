@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from '@/components/Link';
 import { T, t, type Locale, type UIKey } from '@/lib/i18n';
 import { DesignEmblem, ThermalEmblem, ControlEmblem, ManufacturingEmblem } from './FieldEmblems';
 import { areas } from '@/content/areas';

@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from '@/components/Link';
 import PageHero from '@/components/PageHero';
 import ReservationForm from '@/components/ReservationForm';
 import ReservationCalendar from '@/components/ReservationCalendar';

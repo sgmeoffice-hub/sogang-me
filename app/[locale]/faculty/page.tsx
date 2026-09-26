@@ -5,7 +5,7 @@ import { emblemOf } from '@/components/FieldEmblems';
 import { getFaculty } from '@/lib/data';
 import { areas } from '@/content/areas';
 import type { Locale } from '@/lib/i18n';
-export const revalidate = 3600;
+export const revalidate = 86400; // 관리자 저장 때 즉시 갱신되므로 시간 기준 갱신은 하루(Vercel 무료 한도 절약, 2026-09-26)
 
 export default async function Faculty({ params, searchParams }: { params: { locale: Locale }; searchParams: { field?: string } }) {
   const l = params.locale; const ko = l === 'ko';

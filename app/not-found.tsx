@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from '@/components/Link';
 export default function NotFound() {
   return (
     <main className="min-h-screen grid place-items-center text-center px-6">

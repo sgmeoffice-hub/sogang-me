@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from '@/components/Link';
 import { T, type Locale } from '@/lib/i18n';
 
 export default function Footer({ locale }: { locale: Locale }) {

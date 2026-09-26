@@ -1,5 +1,5 @@
 'use client';
-import Link from 'next/link';
+import Link from '@/components/Link';
 import { useRef, useState, useEffect } from 'react';
 import { fmtDate, type Post } from './PostCard';
 import { t, T, type Locale } from '@/lib/i18n';

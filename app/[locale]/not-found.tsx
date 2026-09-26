@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import Link from '@/components/Link';
 
 /** [locale] 안의 404 — 머리글·바닥글(해당 언어)이 함께 보인다. not-found에는 params가 없어 본문은 두 언어로 적는다. */
 export default function LocaleNotFound() {
