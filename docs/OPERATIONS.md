@@ -19,7 +19,7 @@
 | 서비스 | 역할 | 주소 | 무료 한도 |
 |---|---|---|---|
 | **GitHub** | 코드·문서 원본 (`sgmeoffice-hub/sogang-me`, **공개 리포**) | github.com/sgmeoffice-hub/sogang-me | 무제한 |
-| **Vercel** | 호스팅·배포 (팀 "SG office", 프로젝트 `sogang-me`) | vercel.com | **Pro 월 20달러**(2026-09 무료 한도 초과로 사이트 중단 후 전환), 추가 사용 한도 20달러 초과 시 일시정지 |
+| **Vercel** | 호스팅·배포 (팀 "SG office", 프로젝트 `sogang-me`) | vercel.com | **목표 Hobby(무료)**: 엣지 요청·함수 호출 월 100만·Active CPU 4시간, 넘으면 사이트 일시정지. 2026-09 한도 초과로 중단 → 10/15까지 임시 Pro(월 20달러), 요청 절감 후 Hobby 복귀 예정 |
 | **Supabase** | DB·인증·신규 파일·휴지통/수정 이력(vault) (프로젝트 pvdobbplxndsigatnamu) | supabase.com/dashboard | Free: 전송량 월 5GB·DB 500MB·Storage 1GB — 전송량 매달 확인 |
 | **Cloudflare R2** | legacy 미디어 `sogang-me-media`(공개) + 백업 `sogang-me-backup`(비공개) | dash.cloudflare.com | 저장 10GB (현재 약 2.6GB)·전송 무료 |
 | **Google Drive** | 백업 보관 (원본 백업 1.9GB, DB 주간 덤프, 계정정보 문서) | drive.google.com | 15GB (Gmail과 공유) |
@@ -73,7 +73,7 @@
 ## 6. 정기 점검 (분기 1회 권장)
 
 - [ ] 관리자 › 백업·휴지통 마지막 백업 성공 확인 (+ 드라이브 `db-backup_` 폴더)
-- [ ] Vercel Usage·Billing, Supabase Egress(월 5GB) 확인
+- [ ] Vercel Usage(Hobby 한도: 엣지 요청·함수 호출 월 100만, Active CPU 4시간)·Billing, Supabase Egress(월 5GB) 확인
 - [ ] Supabase Storage 사용량 1GB 미만 확인 (대시보드)
 - [ ] R2 사용량 10GB 미만 확인 (거의 고정 1.28GB)
 - [ ] Search Console에서 크롤링 오류 확인

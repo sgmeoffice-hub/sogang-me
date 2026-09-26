@@ -11,13 +11,13 @@
 ## 2. 사용량 한도·요금·중단 위험
 | 서비스 | 요금제 | 한도 | 넘으면 |
 |---|---|---|---|
-| Vercel(서버) | Pro 월 20달러 | 포함 사용량 + 추가 사용 한도 20달러 | 추가분 청구 → 20달러 도달 시 **프로젝트 일시정지 = 사이트 중단**(2026-09 무료 한도 초과로 실제 중단 후 Pro 전환). 요금제 하향(Downgrade)은 즉시 적용되니 금지 |
+| Vercel(서버) | **목표: Hobby(무료)**. 2026-09-16~10-15 임시 Pro(월 20달러) | Hobby: 엣지 요청·함수 호출 월 100만, Active CPU 월 4시간, 전송 100GB | 청구 없이 **사이트 일시정지(다음 주기까지)** — 2026-09 실제 중단. 요청 절감 조치 후 사용량을 보고 갱신일(매월 15일 16시) 1~2일 전에 Hobby로 하향(하향은 즉시 적용). 넘을 것 같으면 그때만 Pro |
 | Supabase(DB·로그인) | Free | 전송량 월 5GB·DB 0.5GB·파일 1GB | "사용 제한" 가능 → 게시판 빈 화면·관리자 로그인 불가. 2026-09 전송량 67% → 9/25 캐시 개선. 매달 확인, 필요 시 Pro(월 25달러) |
 | Cloudflare R2(파일·백업) | 무료 한도 | 저장 10GB(현재 약 2.6GB) | 멈추지 않고 등록 카드로 소액 청구 |
 | Claude | 구독 | 요금제별 사용량 | 사이트 영향 없음, 작업만 대기 |
 | Google | 무료 | 15GB(Gmail·드라이브 공유) | 메일 수신·주간 드라이브 백업 실패 |
 
-결제 카드 만료·해지 시 서비스가 멈출 수 있다. 한도 경고 메일은 모두 학과 Gmail로 온다.
+**운영 원칙: 최대한 무료.** Hobby에서는 요금이 아니라 "중단"이 위험이므로 매달 Vercel Usage를 확인한다(일 평균 함수 호출·엣지 요청 3만 건, Active CPU 8분 이하가 안전선). 배포(main 푸시)마다 페이지 캐시가 비워져 다시 만들어지므로 하루에 여러 번 배포하지 않는다. 결제 카드 만료·해지 시 유료 서비스가 멈출 수 있다. 한도 경고 메일은 모두 학과 Gmail로 온다.
 
 ## 3. 계정·키 (값 없이 목록만)
 - 계정: 학과 Gmail · Claude(claude.ai/code) · GitHub `sgmeoffice-hub` · Vercel 팀 "SG office"/프로젝트 `sogang-me` · Supabase 프로젝트 "Sogang ME" · Cloudflare(R2 `sogang-me-media` 공개, `sogang-me-backup` 비공개) · 관리자 화면 `/adm`(학과 공용 계정, Supabase Auth) · Google 드라이브·Apps Script·Search Console · (선택) Resend · 학교 도메인 담당(디지털정보처) · 옛 홈페이지 호스팅(10월 말 종료 예정)
@@ -54,7 +54,7 @@
 - 외부 대시보드(Cloudflare·Vercel 설정)는 Claude가 직접 조작하지 못한다 — 안내대로 직접 하거나 브라우저의 Claude in Chrome 확장 사용.
 
 ## 8. 정기 점검(매월)
-백업 성공 · Vercel Usage/Billing · Supabase Egress(5GB 중) · Claude 구독 · (연 1회) 학과장·연혁·학사일정·교수진 반영, Search Console.
+백업 성공 · Vercel Usage(Hobby 한도 대비)/Billing · Supabase Egress(5GB 중) · Claude 구독 · (연 1회) 학과장·연혁·학사일정·교수진 반영, Search Console.
 
 ## 9. 알려진 한계·주의
 - 목록 조회수는 최대 10분 늦게 반영. DB를 관리자 화면 밖에서 일괄 수정하면 캐시 새로 고침 필요(`POST /api/admin/revalidate`, Claude가 처리).
