@@ -13,7 +13,7 @@ export async function GET(req: Request) {
   const secret = process.env.CRON_SECRET;
   const authorized = secret ? req.headers.get('authorization') === `Bearer ${secret}` : /vercel-cron/i.test(req.headers.get('user-agent') || '');
   if (!authorized) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
-  if (!allow('cron-backup', 2, 60 * 60 * 1000)) return NextResponse.json({ error: 'too many requests' }, { status: 429 });
+  if (!allow('cron-backup', 8, 60 * 60 * 1000)) return NextResponse.json({ error: 'too many requests' }, { status: 429 });
   const sb = serviceClient();
   const purged = await purgeVault(sb, (row) => removeOwnMedia(sb, row)).catch(() => ({ trash: 0, history: 0 }));
   const status = await runBackup(sb, 'cron');
