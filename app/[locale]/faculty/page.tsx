@@ -5,8 +5,10 @@ import { emblemOf } from '@/components/FieldEmblems';
 import { getFaculty } from '@/lib/data';
 import { areas } from '@/content/areas';
 import type { Locale } from '@/lib/i18n';
+import { pageMeta, navLabel } from '@/lib/seo';
 export const revalidate = 86400; // 관리자 저장 때 즉시 갱신되므로 시간 기준 갱신은 하루(Vercel 무료 한도 절약, 2026-09-26)
 
+export function generateMetadata({ params }: { params: { locale: Locale } }) { return pageMeta(params.locale, '/faculty', { title: navLabel(params.locale, '/faculty') }); }
 export default async function Faculty({ params, searchParams }: { params: { locale: Locale }; searchParams: { field?: string } }) {
   const l = params.locale; const ko = l === 'ko';
   const all = await getFaculty(false);

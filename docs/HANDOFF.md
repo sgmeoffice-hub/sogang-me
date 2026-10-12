@@ -2,6 +2,11 @@
 
 마지막 갱신: 2026-10-12
 
+## 완료 (2026-10-12) — 영문 페이지 검색 정보(제목·설명·hreflang) (책임자: "구글에서 영어로 검색하면 영어 버전이 나와야 하는데 한글로 나옴")
+- **원인**: 모든 페이지(국문·영문)가 루트 레이아웃의 제목 하나("서강대학교 기계공학과 | Sogang Mechanical Engineering")와 국문 섞인 설명을 같이 썼고, canonical·hreflang이 없었다. 구글봇(미국 IP)은 `/`에서 `/en`으로 보내져 영문 본문을 읽지만 제목은 한글로 표시됨.
+- **조치**: `lib/seo.ts`(pageMeta·navLabel·plainExcerpt·siteJsonLd) + `lib/i18n.ts` siteName·siteTitle·siteDesc. `app/[locale]/layout.tsx` generateMetadata로 언어별 기본 제목·템플릿·설명·og(영문: "Department of Mechanical Engineering | Sogang University", 하위 "X | Mechanical Engineering, Sogang University"). 모든 공개 페이지에 generateMetadata — 메뉴 이름·게시글 제목/요약·교수 이름/연구실로 제목·설명, canonical(자기 언어 주소), hreflang ko/en + x-default(홈은 `/`, 나머지는 국문). 홈에 WebSite JSON-LD(사이트 이름 '서강대학교 기계공학과' — 구글 사이트 이름은 도메인당 하나). 루트 레이아웃의 제목 템플릿은 제거(언어별 기본 제목 뒤에 국문 이름이 또 붙던 것, 관리자 제목 중복도 같이 해결). `getPost`·`getFacultyOne`은 React cache로 메타데이터·본문 중복 조회 방지.
+- **남은 것**: 구글 반영은 재수집 후(수일~수주). Search Console › URL 검사에서 `https://me.sogang.ac.kr/en`·`/` 색인 생성 요청 권장. 검색 결과 위쪽 '사이트 이름' 줄은 도메인 단위라 영어 검색에서도 국문일 수 있음. `<html lang>`은 정적 HTML에선 ko, 브라우저에서 SetLang이 en으로 바꿈(구글은 lang 속성을 언어 판별에 쓰지 않음 — 근본 수정은 루트 레이아웃을 [locale]로 옮기는 큰 개편이라 보류).
+
 ## 판정 (2026-10-12) — 10월은 Hobby 하향 불가, Pro 유지 (책임자가 Usage PDF 제공)
 - **실측(Usage, 기간 Sep 27–Oct 12 = 9/27 16:00 KST부터, 대시보드 날짜 경계는 미국 태평양시 자정 = KST 16:00. 출력 10/12 10:30 KST라 실제 약 14.75일분)**: CDN Requests(옛 Edge Requests) 1.52M · Function Invocations 587.82K · Fluid Active CPU 3시간(금액 $0.50 → 약 3.2시간) · Fast Origin 4GB · Fast Data 18GB · Provisioned Memory 49.15GB-hr · ISR 쓰기 40.7K/읽기 255.08K.
 - **30일 환산 vs Hobby 한도**: CDN 요청 약 309만(한도 100만, 3.1배) · 함수 호출 약 120만(1.2배) · CPU 약 6.5시간(4시간, 1.6배) · Origin 약 8.1GB(10GB의 81%) · 메모리 28% · 데이터 전송 37% · ISR 쓰기 41%·읽기 52%. → Hobby로 내리면 주기 시작 후 약 10일 만에 중단될 수준이라 **하향하지 않음**(10/15 Pro 자동 갱신, 인프라 사용 약 $7/월로 포함 크레딧 $20 안).

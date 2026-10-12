@@ -8,12 +8,24 @@ import { formatOffice } from '@/lib/buildings';
 import { notFound } from 'next/navigation';
 import Link from '@/components/Link';
 import { toHtml } from '@/lib/html';
+import { pageMeta } from '@/lib/seo';
 export const revalidate = 86400; // 관리자 저장 때 즉시 갱신되므로 시간 기준 갱신은 하루(Vercel 무료 한도 절약, 2026-09-26)
 export function generateStaticParams() { return []; }   // 선언해야 요청 시 만든 페이지가 캐시된다(ISR) — 없으면 매 요청 DB 조회(2026-09-25)
 
 /** 교수 상세. 연구분야 설명·약력(research/bio)이 비어 있는 분이 대부분이라(2026-09 기준 전임 18명 중 0·1명),
  *  본문 칸을 비워 두는 2단 구성 대신 사진+연락처 프로필 카드를 한 덩어리로 짜고, 아래에 소속 분야 소개와
  *  같은 분야 교수진을 붙여 페이지가 비어 보이지 않게 한다. research/bio가 있으면 그 사이에 그대로 보여준다. */
+export async function generateMetadata({ params }: { params: { locale: Locale; id: string } }) {
+  const l = params.locale; const f = await getFacultyOne(Number(params.id));
+  if (!f || f.published === false) return {};
+  const name = t(f, 'name', l); const pos = t(f, 'title', l);
+  const area = f.is_emeritus ? undefined : areas.find((a) => a.id === f.field);
+  return pageMeta(l, `/faculty/${f.id}`, {
+    title: pos ? (l === 'en' ? `${name}, ${pos}` : `${name} ${pos}`) : name,
+    description: [t(f, 'lab', l), area ? (l === 'en' ? area.en : area.ko) : ''].filter(Boolean).join(' · ') || undefined,
+  });
+}
+
 export default async function FacultyDetail({ params }: { params: { locale: Locale; id: string } }) {
   const l = params.locale; const ko = l === 'ko';
   const f = await getFacultyOne(Number(params.id)); if (!f || f.published === false) notFound();

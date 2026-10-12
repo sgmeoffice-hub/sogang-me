@@ -9,8 +9,11 @@ import { T, t, isLocale, type Locale } from '@/lib/i18n';
 import { areas } from '@/content/areas';
 import { assets, heroFieldVideos } from '@/content/assets';
 import { youtubeThumb } from '@/lib/html';
+import { pageMeta, siteJsonLd } from '@/lib/seo';
 
 export const revalidate = 3600; // 관리자 저장 시 즉시 갱신되므로 길게(10분 → 1시간, 2026-09-25 전송량 절감)
+
+export function generateMetadata({ params }: { params: { locale: Locale } }) { return isLocale(params.locale) ? pageMeta(params.locale, '/') : {}; }
 
 export default async function Home({ params }: { params: { locale: Locale } }) {
   if (!isLocale(params.locale)) notFound();   // /favicon.ico 등 언어가 아닌 한 단계 주소가 여기로 오면 500 대신 404(2026-09-25)
@@ -33,6 +36,8 @@ export default async function Home({ params }: { params: { locale: Locale } }) {
 
   return (
     <>
+      {/* 구글 검색 결과의 사이트 이름 — lib/seo.ts */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(siteJsonLd()) }} />
       {on('hero') && <HeroVideo locale={l} videoUrl={settings.hero_video_url ?? undefined} fieldVideos={heroFieldVideos} poster={settings.hero_poster_url ?? assets.mainVisual} taglineKo={settings.tagline_ko} taglineEn={settings.tagline_en} news={latest} newsHref={on('news') ? '#news' : `/${l}/board/notice`} />}
 
       {on('promo') && promo.length > 0 && (

@@ -37,6 +37,9 @@ export const ui = {
     ug: '학부과정', grad: '대학원과정', industry: '산학협력',
     ugDesc: '130학점 심화전공과 5개 세부 분야 로드맵', gradDesc: '석사·박사·통합과정',
     urecaDesc: '학부생 연구 참여 프로그램 (Intern / Fellow)', industryDesc: '삼성전자·LG·현대모비스 채용연계 트랙',
+    // 검색 결과·공유 미리보기용 사이트 이름·제목·설명 (lib/seo.ts)
+    siteName: '서강대학교 기계공학과', siteTitle: '서강대학교 기계공학과 | Sogang Mechanical Engineering',
+    siteDesc: '서강대학교 기계공학과 — 설계 및 재료역학, 열·유체 및 에너지, 제어·진동·로보틱스, 생산공학 네 기초 분야의 교육과 연구. 학부·대학원 입학, 교과과정, 교수진, 학과 소식을 안내합니다.',
   },
   en: {
     home: 'Home', more: 'More', all: 'All', search: 'Search', date: 'Date', views: 'Views', author: 'Author',
@@ -56,6 +59,8 @@ export const ui = {
     ug: 'Undergraduate', grad: 'Graduate', industry: 'Industry',
     ugDesc: '130-credit intensive major with five specialization roadmaps', gradDesc: 'MS, PhD and integrated programs',
     urecaDesc: 'Undergraduate research experience (Intern / Fellow)', industryDesc: 'Samsung, LG and Hyundai Mobis hiring-linked tracks',
+    siteName: 'Mechanical Engineering, Sogang University', siteTitle: 'Department of Mechanical Engineering | Sogang University',
+    siteDesc: 'Department of Mechanical Engineering at Sogang University, Seoul — education and research in four foundational fields: Design & Materials Mechanics; Thermal, Fluids & Energy; Control, Vibration & Robotics; and Manufacturing Engineering. Admissions, curriculum, faculty and news.',
   },
 } as const;
 export type UIKey = keyof typeof ui.ko;

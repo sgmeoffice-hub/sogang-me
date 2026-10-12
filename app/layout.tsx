@@ -2,7 +2,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: { default: '서강대학교 기계공학과 | Sogang Mechanical Engineering', template: '%s | 서강대학교 기계공학과' },
+  // 템플릿은 언어별로 app/[locale]/layout.tsx에서 붙인다 — 여기 템플릿이 있으면 언어별 기본 제목 뒤에 국문 이름이 한 번 더 붙는다
+  title: '서강대학교 기계공학과 | Sogang Mechanical Engineering',
   description: '서강대학교 기계공학과 — Department of Mechanical Engineering, Sogang University',
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://me.sogang.ac.kr'),
   verification: { google: '47UcS297K2L18VMhMwqUu706jSsxjW-lU-4XBrLNAy4' },

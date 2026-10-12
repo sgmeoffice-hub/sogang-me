@@ -6,8 +6,10 @@ import { getReservations } from '@/lib/data';
 import { facilities } from '@/lib/nav';
 import { T, type Locale } from '@/lib/i18n';
 import { facultyNames, peopleEn } from '@/lib/names';
+import { pageMeta, navLabel } from '@/lib/seo';
 export const revalidate = 3600; // 신청(/api/reservations)·관리자 처리 때 즉시 갱신되므로 30초 → 1시간(2026-09-25 전송량 절감)
 
+export function generateMetadata({ params }: { params: { locale: Locale } }) { return pageMeta(params.locale, '/reservation', { title: navLabel(params.locale, '/reservation') }); }
 export default async function Reservation({ params, searchParams }: { params: { locale: Locale }; searchParams: { f?: string; y?: string; m?: string } }) {
   const l = params.locale; const ko = l === 'ko';
   // 기본 시설은 사용 빈도가 가장 높은 첫 항목(학과회의실)

@@ -7,6 +7,7 @@ import { boards, boardSection } from '@/lib/nav';
 import { t, T, authorLabel, type Locale } from '@/lib/i18n';
 import { notFound } from 'next/navigation';
 import { facultyNames, peopleEn } from '@/lib/names';
+import { pageMeta, navLabel } from '@/lib/seo';
 export const revalidate = 600; // 60초 → 10분(2026-09-25 Supabase 전송량 절감): 글 저장·삭제는 즉시 갱신되고, 목록의 조회수만 최대 10분 늦게 바뀐다
 const PER = 15;
 const intros: Record<string, [string, string]> = {
@@ -16,6 +17,7 @@ const intros: Record<string, [string, string]> = {
   videos: ['자유전공학부 학생과 기계공학과 학부생이 전공 분야를 쉽게 이해할 수 있는 영상을 모았습니다. NASA 출신 Mark Rober, 로봇·Physical AI, 세부분야별 영상으로 구성되어 있습니다.', 'Videos that make mechanical engineering easy to grasp: Mark Rober, robotics & Physical AI, and one per sub-field.'],
 };
 
+export function generateMetadata({ params }: { params: { locale: Locale; board: string } }) { const path = `/board/${params.board}`; return pageMeta(params.locale, path, { title: navLabel(params.locale, path) || T(params.locale, params.board as any) }); }
 export default async function BoardList({ params, searchParams }: { params: { locale: Locale; board: string }; searchParams: { page?: string; q?: string; year?: string } }) {
   const { locale: l, board } = params; const ko = l === 'ko';
   if (!(boards as readonly string[]).includes(board)) notFound();

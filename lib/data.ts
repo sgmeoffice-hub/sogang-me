@@ -1,4 +1,5 @@
 import { unstable_cache } from 'next/cache';
+import { cache } from 'react';
 import { createPublicClient } from './supabase-server';
 import type { Post } from '@/components/PostCard';
 import { safeQuery } from './search';
@@ -59,7 +60,8 @@ export const getPosts = unstable_cache(getPostsRaw, ['getPosts'], { revalidate: 
 /** 게시글 상세 — 보는 언어의 본문만 읽는다(두 언어 본문을 다 읽던 것의 약 절반, 2026-09-25 Supabase 전송량 절감).
  *  영문 페이지는 영문 본문이 비었을 때만 국문 본문을 한 번 더 읽는다(번역 없음 안내·국문 대체 표시용). */
 const POST_COLS = 'id,board,title_ko,title_en,excerpt_ko,excerpt_en,thumbnail_url,images,attachments,created_at,is_pinned,view_count,author,video_url,term,members,advisor,category,category_en,sort_order,published';
-export async function getPost(id: number, locale: 'ko' | 'en' = 'ko') {
+// cache(): 같은 렌더링 안에서 페이지 메타데이터(검색 결과 제목)와 본문이 같은 글을 두 번 조회하지 않게
+export const getPost = cache(async function getPost(id: number, locale: 'ko' | 'en' = 'ko') {
   const sb = createPublicClient();
   const { data } = await sb.from('posts').select(`${POST_COLS},content_${locale}`).eq('id', id).eq('published', true).single();
   if (data && locale === 'en' && !(data as any).content_en) {
@@ -67,7 +69,7 @@ export async function getPost(id: number, locale: 'ko' | 'en' = 'ko') {
     (data as any).content_ko = ko?.content_ko ?? null;
   }
   return data as Post | null;
-}
+});
 export async function getAdjacent(board: string, id: number, created: string) {
   const sb = createPublicClient();
   // created_at이 같은 글(자정 날짜만 있는 legacy 글 다수)은 id로 순서를 가른다 — 동률 글이 이전/다음에서 빠지지 않게
@@ -96,9 +98,9 @@ export async function getChair() {
   const { data } = await sb.from('faculty').select('*').eq('field', 'chair').eq('published', true).order('sort_order');
   return data || [];
 }
-export async function getFacultyOne(id: number) {
+export const getFacultyOne = cache(async function getFacultyOne(id: number) {
   const sb = createPublicClient(); const { data } = await sb.from('faculty').select('*').eq('id', id).single(); return data;
-}
+});
 export async function getPage(slug: string) {
   const sb = createPublicClient(); const { data } = await sb.from('pages').select('*').eq('slug', slug).maybeSingle(); return data;
 }
