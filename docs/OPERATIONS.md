@@ -70,6 +70,8 @@
 | me.sogang.ac.kr 도메인 문제 | 디지털정보처에 문의 (DNS: CNAME → Vercel) |
 | 원인 불명 | Claude 세션을 열고 증상을 그대로 설명하면 진단부터 해준다 |
 
+- **방화벽 규칙(2026-10-12~)**: 옛 홈페이지 게시판·첨부 주소(`/bbs/…`, `/v2/bbs/…`)를 도는 로봇이 하루 수만 건씩 들어와 `vercel.json`의 `routes`에 챌린지 규칙을 둠(사람 브라우저는 자동 통과 후 새 주소로 이동, 막힌 요청은 Vercel 사용량에 안 잡힘). 트래픽 확인: Vercel › 프로젝트 › Firewall(Past Day, Top Request Paths·User Agents).
+
 ## 6. 정기 점검 (분기 1회 권장)
 
 - [ ] 관리자 › 백업·휴지통 마지막 백업 성공 확인 (+ 드라이브 `db-backup_` 폴더)

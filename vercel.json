@@ -1,4 +1,11 @@
 {
+  "routes": [
+    {
+      "src": "^/(?:v2/)?bbs(?:/.*)?$",
+      "mitigate": { "action": "challenge" },
+      "continue": true
+    }
+  ],
   "crons": [
     {
       "path": "/api/cron/translate",
