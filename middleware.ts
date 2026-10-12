@@ -106,9 +106,13 @@ export async function middleware(req: NextRequest) {
   // 판별 순서(2026-09-24 책임자: "영어로 접속되는 일이 잦다"): ① 전환 버튼으로 저장한 쿠키 ② 브라우저 언어에 한국어가 있으면 한국어
   // ③ 한국 IP면 한국어(폰 언어를 영어로 쓰는 한국 사용자 포함) ④ 그 밖(해외 IP + 한국어 없는 브라우저)만 영어.
   // 예전에는 IP 국가를 브라우저 언어보다 먼저 봐서 VPN·해외 출장·해외로 잡히는 통신망에서는 한국어 브라우저도 영어로 갔다.
+  // ⓪ 언어 선호(Accept-Language)를 아예 보내지 않는 클라이언트(구글봇 등 검색 로봇 — 사람 브라우저는 항상 보낸다)는 기본 언어(국문)로.
+  //    구글봇은 미국 IP라 예전엔 /en으로 보내져, 구글이 /와 /en을 같은 페이지로 묶고 /en을 색인하지 않았다
+  //    (2026-10-12 Search Console: /en '사용자가 선택한 표준이 없는 중복 페이지'). /en은 hreflang으로 따로 찾아간다.
   let locale = 'ko';
   if (cookie && isLocale(cookie)) locale = cookie;
   else if (/(^|[,;\s])ko\b/i.test(accept)) locale = 'ko';
+  else if (!accept) locale = 'ko';
   else if (country) locale = country === 'KR' ? 'ko' : 'en';
   else if (accept) locale = 'en';
   const url = req.nextUrl.clone();
