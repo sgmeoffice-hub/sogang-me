@@ -13,13 +13,15 @@ import { pageMeta, plainExcerpt } from '@/lib/seo';
 export function generateStaticParams() { return []; }   // 선언해야 요청 시 만든 페이지가 캐시된다(ISR) — 없으면 매 요청 DB 조회
 export const revalidate = 604800; // 관리자 저장·자동 번역·일괄 수정(/api/admin/revalidate) 때 즉시 갱신되므로 시간 기준 갱신은 1주 — 4,700여 글을 크롤러가 훑을 때 DB 전송량(2026-09-25)과 Vercel 무료 한도(재생성 CPU, 2026-09-26)를 아낀다
 
-export async function generateMetadata({ params }: { params: { locale: Locale; board: string; id: string } }) {
+export async function generateMetadata(props: { params: Promise<{ locale: Locale; board: string; id: string }> }) {
+  const params = await props.params;
   const l = params.locale; const p = await getPost(Number(params.id), l);
   if (!p || p.board !== params.board) return {};
   return pageMeta(l, `/board/${p.board}/${p.id}`, { title: t(p, 'title', l), description: t(p, 'excerpt', l) || plainExcerpt(t(p, 'content', l)) || undefined });
 }
 
-export default async function PostPage({ params }: { params: { locale: Locale; board: string; id: string } }) {
+export default async function PostPage(props: { params: Promise<{ locale: Locale; board: string; id: string }> }) {
+  const params = await props.params;
   const { locale: l, board } = params; const ko = l === 'ko';
   const p = await getPost(Number(params.id), l); if (!p || p.board !== board) notFound();
   const { prev, next } = await getAdjacent(board, p.id, p.created_at);

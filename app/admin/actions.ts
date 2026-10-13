@@ -17,7 +17,7 @@ import { runBackup } from '@/lib/backup';
 import { adminBase as base } from '@/lib/admin';
 
 async function admin() {
-  const sb = createClient();
+  const sb = await createClient();
   const { data: { user } } = await sb.auth.getUser();
   if (!user) throw new Error('unauthorized');
   const { data: ok } = await sb.rpc('is_admin');
@@ -38,7 +38,7 @@ async function removeMedia(sb: any, row: any) {
 const strip = (html: string) => html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 180);
 
 export async function signOut() {
-  const sb = createClient(); await sb.auth.signOut(); redirect(base());
+  const sb = await createClient(); await sb.auth.signOut(); redirect(base());
 }
 
 /** 작성일 관례: created_at은 'KST 시각을 +00으로' 저장한다 (legacy 이관분과 동일 — 표시도 UTC 기준).

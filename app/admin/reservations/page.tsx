@@ -9,8 +9,9 @@ import { START_SLOTS, END_SLOTS, kstToday, monthRange } from '@/lib/reservation'
 
 type SP = { f?: string; y?: string; m?: string; d?: string; edit?: string; note?: string };
 
-export default async function ReservationsAdmin({ searchParams }: { searchParams: SP }) {
-  const sb = createClient();
+export default async function ReservationsAdmin(props: { searchParams: Promise<SP> }) {
+  const searchParams = await props.searchParams;
+  const sb = await createClient();
   const base = `${adminBase()}/reservations`;
   const today = kstToday();
   // 화면 상태(시설·연월·마지막 입력 날짜)는 쿼리스트링에 유지 — 한 건 등록 후에도 같은 시설로 이어서 입력할 수 있게

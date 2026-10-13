@@ -14,8 +14,12 @@ export const revalidate = 86400; // 관리자 저장 때 즉시 갱신되므로 
 export function generateStaticParams() { return []; }   // 선언해야 요청 시 만든 페이지가 캐시된다(ISR) — 없으면 매 요청 DB 조회(2026-09-25)
 const slugs = ['admission', 'majors', 'curriculum', 'competency', 'calendar', 'activities', 'ureca'];
 
-export function generateMetadata({ params }: { params: { locale: Locale; slug: string } }) { const path = `/undergraduate/${params.slug}`; return pageMeta(params.locale, path, { title: navLabel(params.locale, path) }); }
-export default async function UG({ params }: { params: { locale: Locale; slug: string } }) {
+export async function generateMetadata(props: { params: Promise<{ locale: Locale; slug: string }> }) {
+  const params = await props.params;
+  const path = `/undergraduate/${params.slug}`; return pageMeta(params.locale, path, { title: navLabel(params.locale, path) });
+}
+export default async function UG(props: { params: Promise<{ locale: Locale; slug: string }> }) {
+  const params = await props.params;
   const { locale: l, slug } = params; const ko = l === 'ko';
   if (!slugs.includes(slug)) notFound();
   if (slug === 'calendar') return <StaticPage locale={l} section="undergraduate" slug="calendar"><AcademicCalendar locale={l} /></StaticPage>;

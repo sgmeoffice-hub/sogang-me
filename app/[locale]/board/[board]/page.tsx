@@ -17,8 +17,15 @@ const intros: Record<string, [string, string]> = {
   videos: ['자유전공학부 학생과 기계공학과 학부생이 전공 분야를 쉽게 이해할 수 있는 영상을 모았습니다. NASA 출신 Mark Rober, 로봇·Physical AI, 세부분야별 영상으로 구성되어 있습니다.', 'Videos that make mechanical engineering easy to grasp: Mark Rober, robotics & Physical AI, and one per sub-field.'],
 };
 
-export function generateMetadata({ params }: { params: { locale: Locale; board: string } }) { const path = `/board/${params.board}`; return pageMeta(params.locale, path, { title: navLabel(params.locale, path) || T(params.locale, params.board as any) }); }
-export default async function BoardList({ params, searchParams }: { params: { locale: Locale; board: string }; searchParams: { page?: string; q?: string; year?: string } }) {
+export async function generateMetadata(props: { params: Promise<{ locale: Locale; board: string }> }) {
+  const params = await props.params;
+  const path = `/board/${params.board}`; return pageMeta(params.locale, path, { title: navLabel(params.locale, path) || T(params.locale, params.board as any) });
+}
+export default async function BoardList(
+  props: { params: Promise<{ locale: Locale; board: string }>; searchParams: Promise<{ page?: string; q?: string; year?: string }> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const { locale: l, board } = params; const ko = l === 'ko';
   if (!(boards as readonly string[]).includes(board)) notFound();
   const special = ['promo', 'capstone', 'festival', 'videos'].includes(board);

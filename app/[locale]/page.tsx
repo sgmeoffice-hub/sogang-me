@@ -13,9 +13,13 @@ import { pageMeta, siteJsonLd } from '@/lib/seo';
 
 export const revalidate = 3600; // 관리자 저장 시 즉시 갱신되므로 길게(10분 → 1시간, 2026-09-25 전송량 절감)
 
-export function generateMetadata({ params }: { params: { locale: Locale } }) { return isLocale(params.locale) ? pageMeta(params.locale, '/') : {}; }
+export async function generateMetadata(props: { params: Promise<{ locale: Locale }> }) {
+  const params = await props.params;
+  return isLocale(params.locale) ? pageMeta(params.locale, '/') : {};
+}
 
-export default async function Home({ params }: { params: { locale: Locale } }) {
+export default async function Home(props: { params: Promise<{ locale: Locale }> }) {
+  const params = await props.params;
   if (!isLocale(params.locale)) notFound();   // /favicon.ico 등 언어가 아닌 한 단계 주소가 여기로 오면 500 대신 404(2026-09-25)
   const l = params.locale; const ko = l === 'ko';
   const [{ groups, gallery, banners, settings, promo, videos, latest }, labCount] = await Promise.all([getHomeData(), getLabCount()]);

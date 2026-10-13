@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase-server';
 import { adminBase } from '@/lib/admin';
 export default async function FacultyAdmin() {
-  const sb = createClient(); const b = adminBase();
+  const sb = await createClient(); const b = adminBase();
   const { data } = await sb.from('faculty').select('id,name_ko,name_en,lab_ko,office,field,is_emeritus,published,sort_order,groups').order('is_emeritus').order('sort_order');
   return (<div>
     <div className="flex items-center justify-between"><h1 className="text-2xl font-bold">교수진 관리</h1><Link href={`${b}/faculty/new`} className="btn-primary">+ 교수 추가</Link></div>

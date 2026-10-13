@@ -10,7 +10,7 @@ export const metadata = { title: '관리자 · 서강대학교 기계공학과',
 
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const sb = createClient();
+  const sb = await createClient();
   const { data: { user } } = await sb.auth.getUser();
   if (!user) return <LoginForm />;
   const { data: ok } = await sb.rpc('is_admin');

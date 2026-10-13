@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase-server';
 import { saveBanner, deleteBanner } from '@/app/admin/actions';
 import PhotoField from '@/components/admin/PhotoField';
 export default async function Banners() {
-  const sb = createClient(); const { data } = await sb.from('banners').select('*').order('sort_order');
+  const sb = await createClient(); const { data } = await sb.from('banners').select('*').order('sort_order');
   const Form = ({ b }: { b?: any }) => (
     <form action={saveBanner} className="grid gap-2 sm:grid-cols-[120px_1fr_1fr] bg-white border border-sg-line p-4 text-[13px]">
       {b && <input type="hidden" name="id" value={b.id} />}

@@ -1,9 +1,10 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
-/** Server component / server action client (uses the user's session cookies). */
-export function createClient() {
-  const cookieStore = cookies();
+/** Server component / server action client (uses the user's session cookies).
+ *  Next 15부터 cookies()가 비동기라 이 함수도 async — 호출하는 쪽은 `await createClient()`. */
+export async function createClient() {
+  const cookieStore = await cookies();
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,

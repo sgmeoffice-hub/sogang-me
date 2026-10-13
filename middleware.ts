@@ -101,7 +101,7 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
   const cookie = req.cookies.get('sg_lang')?.value;
-  const country = req.headers.get('x-vercel-ip-country') || req.geo?.country || '';
+  const country = req.headers.get('x-vercel-ip-country') || ''; // Next 15에서 req.geo가 없어짐 — 같은 Vercel 헤더에서 읽던 값이라 동작은 같다
   const accept = req.headers.get('accept-language') || '';
   // 판별 순서(2026-09-24 책임자: "영어로 접속되는 일이 잦다"): ① 전환 버튼으로 저장한 쿠키 ② 브라우저 언어에 한국어가 있으면 한국어
   // ③ 한국 IP면 한국어(폰 언어를 영어로 쓰는 한국 사용자 포함) ④ 그 밖(해외 IP + 한국어 없는 브라우저)만 영어.

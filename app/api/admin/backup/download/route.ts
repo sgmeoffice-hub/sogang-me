@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 
 /** 관리자 전용: 백업 파일을 5분짜리 서명 주소로 내려받는다(백업 버킷은 비공개). */
 export async function GET(req: Request) {
-  const sb = createClient();
+  const sb = await createClient();
   const { data: { user } } = await sb.auth.getUser();
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   const { data: ok } = await sb.rpc('is_admin');

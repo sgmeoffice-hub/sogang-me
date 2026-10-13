@@ -1,2 +1,5 @@
 import { redirect } from 'next/navigation';
-export default function Contact({ params }: { params: { locale: string } }) { redirect(`/${params.locale}/about/location`); }
+export default async function Contact(props: { params: Promise<{ locale: string }> }) {
+  const params = await props.params;
+  redirect(`/${params.locale}/about/location`);
+}

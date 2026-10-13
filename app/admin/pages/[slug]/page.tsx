@@ -5,9 +5,10 @@ import TranslateButton from '@/components/admin/TranslateButton';
 import { staticPages } from '@/content';
 import { notFound } from 'next/navigation';
 
-export default async function EditPage({ params }: { params: { slug: string } }) {
+export default async function EditPage(props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   const slug = decodeURIComponent(params.slug); const builtin = staticPages[slug]; if (!builtin) notFound();
-  const sb = createClient(); const { data } = await sb.from('pages').select('*').eq('slug', slug).maybeSingle();
+  const sb = await createClient(); const { data } = await sb.from('pages').select('*').eq('slug', slug).maybeSingle();
   return (<div>
     <div className="flex items-center justify-between"><h1 className="text-2xl font-bold font-mono">/{slug}</h1>
       {data && <form action={resetPage}><input type="hidden" name="slug" value={slug} /><button className="text-[13px] text-sg-red underline">기본 내용으로 되돌리기</button></form>}</div>

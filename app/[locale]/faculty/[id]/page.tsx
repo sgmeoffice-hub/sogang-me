@@ -15,7 +15,8 @@ export function generateStaticParams() { return []; }   // 선언해야 요청 �
 /** 교수 상세. 연구분야 설명·약력(research/bio)이 비어 있는 분이 대부분이라(2026-09 기준 전임 18명 중 0·1명),
  *  본문 칸을 비워 두는 2단 구성 대신 사진+연락처 프로필 카드를 한 덩어리로 짜고, 아래에 소속 분야 소개와
  *  같은 분야 교수진을 붙여 페이지가 비어 보이지 않게 한다. research/bio가 있으면 그 사이에 그대로 보여준다. */
-export async function generateMetadata({ params }: { params: { locale: Locale; id: string } }) {
+export async function generateMetadata(props: { params: Promise<{ locale: Locale; id: string }> }) {
+  const params = await props.params;
   const l = params.locale; const f = await getFacultyOne(Number(params.id));
   if (!f || f.published === false) return {};
   const name = t(f, 'name', l); const pos = t(f, 'title', l);
@@ -26,7 +27,8 @@ export async function generateMetadata({ params }: { params: { locale: Locale; i
   });
 }
 
-export default async function FacultyDetail({ params }: { params: { locale: Locale; id: string } }) {
+export default async function FacultyDetail(props: { params: Promise<{ locale: Locale; id: string }> }) {
+  const params = await props.params;
   const l = params.locale; const ko = l === 'ko';
   const f = await getFacultyOne(Number(params.id)); if (!f || f.published === false) notFound();
   // 명예교수는 분야를 쓰지 않는다 — 전임 시절 field가 남아 있어도 배지·분야 섹션·같은 분야 목록이 뜨지 않게 (리뷰 지적: 그대로 두면 명예교수 전체가 '같은 분야'로 잘못 나열되고 목록이 두 번 렌더됨)

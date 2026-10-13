@@ -10,7 +10,7 @@ export const maxDuration = 60;
  *  - force: true  → 이미 있는 영문도 다시 번역 (무료 번역본을 Claude로 교체할 때)
  */
 export async function POST(req: Request) {
-  const sb = createClient();
+  const sb = await createClient();
   const { data: { user } } = await sb.auth.getUser();
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   const { data: ok } = await sb.rpc('is_admin');

@@ -4,8 +4,9 @@ import { urecaTerms } from '@/lib/nav';
 
 // 셀이 = + - @ 로 시작하면 엑셀이 수식으로 해석한다(수식 주입) — 앞에 '를 붙여 무력화
 const csvCell = (v: any) => { let s = String(v ?? ''); if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`; return `"${s.replace(/"/g, '""')}"`; };
-export default async function UrecaAdmin({ searchParams }: { searchParams: { year?: string; term?: string } }) {
-  const sb = createClient();
+export default async function UrecaAdmin(props: { searchParams: Promise<{ year?: string; term?: string }> }) {
+  const searchParams = await props.searchParams;
+  const sb = await createClient();
   let q = sb.from('ureca_applications').select('*').order('created_at', { ascending: false }).limit(2500);
   if (searchParams.year) q = q.eq('year', Number(searchParams.year));
   if (searchParams.term) q = q.eq('term', searchParams.term);

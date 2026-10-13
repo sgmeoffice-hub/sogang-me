@@ -3,7 +3,7 @@ import { saveSettings, addAdmin } from '@/app/admin/actions';
 import TranslateAll from '@/components/admin/TranslateAll';
 import { translateProvider } from '@/lib/translate';
 export default async function Settings() {
-  const sb = createClient();
+  const sb = await createClient();
   const { data } = await sb.from('site_settings').select('value').eq('key', 'home').maybeSingle();
   const { data: admins } = await sb.from('admins').select('email');
   const { count: missing } = await sb.from('posts').select('id', { count: 'exact', head: true }).or('title_en.is.null,content_en.is.null,excerpt_en.is.null,category_en.is.null');

@@ -13,8 +13,11 @@ function pageList(page: number, pages: number): number[] {
   return out;
 }
 
-export default async function Posts({ searchParams }: { searchParams: { board?: string; page?: string; q?: string } }) {
-  const sb = createClient(); const b = adminBase();
+export default async function Posts(
+  props: { searchParams: Promise<{ board?: string; page?: string; q?: string }> }
+) {
+  const searchParams = await props.searchParams;
+  const sb = await createClient(); const b = adminBase();
   const board = searchParams.board || 'notice'; const pageN = Number(searchParams.page); const page = Number.isFinite(pageN) && pageN >= 1 ? Math.floor(pageN) : 1; const per = 30;
   let q = sb.from('posts').select('id,title_ko,title_en,author,created_at,is_pinned,published,view_count', { count: 'exact' }).eq('board', board);
   if (searchParams.q) q = q.ilike('title_ko', `%${searchParams.q}%`);

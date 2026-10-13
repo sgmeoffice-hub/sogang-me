@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase-server';
 import { translateKoToEn } from '@/lib/translate';
 
 export async function POST(req: Request) {
-  const sb = createClient();
+  const sb = await createClient();
   const { data: { user } } = await sb.auth.getUser();
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   const { data: ok } = await sb.rpc('is_admin');

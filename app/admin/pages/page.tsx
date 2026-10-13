@@ -4,7 +4,7 @@ import { adminBase } from '@/lib/admin';
 import { staticPages } from '@/content';
 import { nav } from '@/lib/nav';
 export default async function PagesAdmin() {
-  const sb = createClient(); const b = adminBase();
+  const sb = await createClient(); const b = adminBase();
   const { data } = await sb.from('pages').select('slug,updated_at');
   const edited = new Map((data || []).map((p: any) => [p.slug, p.updated_at]));
   const rows = Object.keys(staticPages).map((slug) => {

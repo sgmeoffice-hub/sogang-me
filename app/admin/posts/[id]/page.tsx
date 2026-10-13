@@ -7,10 +7,14 @@ import SubmitButton from '@/components/admin/SubmitButton';
 
 const kst = (iso: string) => new Date(Date.parse(iso) + 9 * 3600e3).toISOString().slice(0, 16).replace('T', ' ');
 
-export default async function EditPost({ params, searchParams }: { params: { id: string }; searchParams: { board?: string; restored?: string } }) {
+export default async function EditPost(
+  props: { params: Promise<{ id: string }>; searchParams: Promise<{ board?: string; restored?: string }> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const isNew = params.id === 'new';
   let post: any = null;
-  if (!isNew) { const sb = createClient(); const { data } = await sb.from('posts').select('*').eq('id', Number(params.id)).single(); if (!data) notFound(); post = data; }
+  if (!isNew) { const sb = await createClient(); const { data } = await sb.from('posts').select('*').eq('id', Number(params.id)).single(); if (!data) notFound(); post = data; }
   return (
     <div>
       <div className="flex items-center justify-between"><h1 className="text-2xl font-bold">{isNew ? '새 게시글' : `게시글 수정 #${post.id}`}</h1>{post && <DeletePostButton id={post.id} board={post.board} />}</div>

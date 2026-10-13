@@ -82,6 +82,6 @@ export function ManufacturingEmblem({ className = '' }: { className?: string }) 
   );
 }
 
-export const emblemOf: Record<string, (p: { className?: string }) => JSX.Element> = {
+export const emblemOf: Record<string, (p: { className?: string }) => React.JSX.Element> = {
   design: DesignEmblem, thermal: ThermalEmblem, control: ControlEmblem, manufacturing: ManufacturingEmblem,
 };

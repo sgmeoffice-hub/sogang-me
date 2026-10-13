@@ -8,8 +8,12 @@ export const revalidate = 86400; // 관리자 저장 때 즉시 갱신되므로 
 // 빈 배열이라도 선언해야 요청 시 한 번 만든 페이지를 캐시(ISR)한다 — 없으면 매 요청 DB 조회(2026-09-25 Supabase 전송량 원인)
 export function generateStaticParams() { return []; }
 
-export function generateMetadata({ params }: { params: { locale: Locale; slug: string } }) { const path = `/about/${params.slug}`; return pageMeta(params.locale, path, { title: navLabel(params.locale, path) }); }
-export default async function AboutPage({ params }: { params: { locale: Locale; slug: string } }) {
+export async function generateMetadata(props: { params: Promise<{ locale: Locale; slug: string }> }) {
+  const params = await props.params;
+  const path = `/about/${params.slug}`; return pageMeta(params.locale, path, { title: navLabel(params.locale, path) });
+}
+export default async function AboutPage(props: { params: Promise<{ locale: Locale; slug: string }> }) {
+  const params = await props.params;
   const { locale: l, slug } = params;
   const ko = l === 'ko';
   if (slug === 'history') {

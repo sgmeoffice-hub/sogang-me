@@ -8,7 +8,7 @@ import { getBackupStatus } from '@/lib/backup';
 import { serviceClient } from '@/lib/vault';
 
 export default async function Dashboard() {
-  const sb = createClient(); const b = adminBase();
+  const sb = await createClient(); const b = adminBase();
   const counts = await Promise.all(boards.map(async (bd) => { const { count } = await sb.from('posts').select('id', { count: 'exact', head: true }).eq('board', bd); return [bd, count || 0] as const; }));
   const { count: pending } = await sb.from('reservations').select('id', { count: 'exact', head: true }).eq('status', 'pending');
   const { count: fac } = await sb.from('faculty').select('id', { count: 'exact', head: true });

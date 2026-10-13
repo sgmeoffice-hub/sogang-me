@@ -8,9 +8,10 @@ import { researchGroupDefs } from '@/lib/groups';
 import { buildings, parseOffice } from '@/lib/buildings';
 import { notFound } from 'next/navigation';
 
-export default async function EditFaculty({ params }: { params: { id: string } }) {
+export default async function EditFaculty(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const isNew = params.id === 'new'; let f: any = null;
-  if (!isNew) { const sb = createClient(); const { data } = await sb.from('faculty').select('*').eq('id', Number(params.id)).single(); if (!data) notFound(); f = data; }
+  if (!isNew) { const sb = await createClient(); const { data } = await sb.from('faculty').select('*').eq('id', Number(params.id)).single(); if (!data) notFound(); f = data; }
   const legacy = parseOffice(f?.office);
   const curBuilding = f?.building || legacy.building || '';
   const curRoom = f?.room || legacy.room || '';

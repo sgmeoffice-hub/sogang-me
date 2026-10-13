@@ -9,8 +9,15 @@ import { facultyNames, peopleEn } from '@/lib/names';
 import { pageMeta, navLabel } from '@/lib/seo';
 export const revalidate = 3600; // 신청(/api/reservations)·관리자 처리 때 즉시 갱신되므로 30초 → 1시간(2026-09-25 전송량 절감)
 
-export function generateMetadata({ params }: { params: { locale: Locale } }) { return pageMeta(params.locale, '/reservation', { title: navLabel(params.locale, '/reservation') }); }
-export default async function Reservation({ params, searchParams }: { params: { locale: Locale }; searchParams: { f?: string; y?: string; m?: string } }) {
+export async function generateMetadata(props: { params: Promise<{ locale: Locale }> }) {
+  const params = await props.params;
+  return pageMeta(params.locale, '/reservation', { title: navLabel(params.locale, '/reservation') });
+}
+export default async function Reservation(
+  props: { params: Promise<{ locale: Locale }>; searchParams: Promise<{ f?: string; y?: string; m?: string }> }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const l = params.locale; const ko = l === 'ko';
   // 기본 시설은 사용 빈도가 가장 높은 첫 항목(학과회의실)
   const facility = facilities.some((x) => x.id === searchParams.f) ? searchParams.f! : facilities[0].id;
