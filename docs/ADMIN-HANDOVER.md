@@ -22,7 +22,7 @@
 ## 3. 계정·키 (값 없이 목록만)
 - 계정: 학과 Gmail · Claude(claude.ai/code) · GitHub `sgmeoffice-hub` · Vercel 팀 "SG office"/프로젝트 `sogang-me` · Supabase 프로젝트 "Sogang ME" · Cloudflare(R2 `sogang-me-media` 공개, `sogang-me-backup` 비공개) · 관리자 화면 `/adm`(학과 공용 계정, Supabase Auth) · Google 드라이브·Apps Script·Search Console · (선택) Resend · 학교 도메인 담당(디지털정보처) · 옛 홈페이지 호스팅(10월 말 종료 예정)
 - Vercel 환경변수: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BACKUP_BUCKET`, (선택) `RESEND_API_KEY`·`NOTIFY_EMAIL`·`ADMIN_PATH`·`ANTHROPIC_API_KEY`(미사용)
-- Claude Code 환경(Environment): `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, (설정 시) `VERCEL_TOKEN`(Vercel › Account Settings › Tokens, 범위 SG office 팀·만료일 지정 — Claude가 사용량·방화벽을 직접 조회·설정, 담당자 교체 시 폐기 후 재발급) / Apps Script 스크립트 속성: service_role 키
+- Claude Code 환경(Environment): `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, (설정 시) `VERCEL_TOKEN`(Vercel › Account Settings › Tokens의 'claude-code', SG office 팀 범위·만료 없음 — Claude가 Vercel 사용량·방화벽을 직접 조회·설정. Claude 계정과 함께 그대로 넘어가므로 인수인계 때 별도 조치 없음. 없거나 문제가 생겨도 사이트는 정상이며, Tokens에서 새로 만들어 같은 자리에 넣으면 됨) / Apps Script 스크립트 속성: service_role 키
 - 키를 교체할 때는 위 보관 위치를 **모두** 새 값으로 바꾸고 Vercel 재배포(환경변수 변경만으로는 재배포되지 않음).
 
 ## 4. 구조
