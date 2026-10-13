@@ -6,10 +6,11 @@ import { festivalCategories } from '@/lib/nav';
 import { youtubeThumb, downloadUrl } from '@/lib/html';
 import { coverFor } from '@/lib/placeholder';
 
-const termLabel = (term: string | null | undefined, ko: boolean) => {
+/** '2026-1' → '2026학년도 1학기' / 'Spring 2026'. 목록(여기)과 글 상세(board/[board]/[id])가 같이 쓴다 — 두 곳 표기가 달랐던 것('2026 · Spring' vs '2026 Spring')을 한 곳으로(2026-10-13) */
+export const termLabel = (term: string | null | undefined, ko: boolean) => {
   if (!term) return '';
   const m = term.match(/^(\d{4})-(\d)$/);
-  if (m) return ko ? `${m[1]}학년도 ${m[2]}학기` : `${m[1]} · ${m[2] === '1' ? 'Spring' : 'Fall'}`;
+  if (m) return ko ? `${m[1]}학년도 ${m[2]}학기` : `${m[2] === '1' ? 'Spring' : 'Fall'} ${m[1]}`;
   return term;
 };
 const groupBy = <T,>(arr: T[], key: (x: T) => string) => { const g: Record<string, T[]> = {}; arr.forEach((x) => { (g[key(x)] ||= []).push(x); }); return g; };
@@ -123,7 +124,7 @@ export function VideosView({ posts, locale }: { posts: Post[]; locale: Locale })
     <div>
       {featured?.video_url && (
         <div className="grid lg:grid-cols-[1.4fr_1fr] gap-6 mb-14 items-start">
-          <YouTube url={featured.video_url} title={featured.title_ko} />
+          <YouTube url={featured.video_url} title={t(featured, 'title', locale)} />
           <div><p className="eyebrow">{ko ? '추천 영상' : 'Featured'}</p><h2 className="text-[22px] font-bold mt-2 leading-snug">{t(featured, 'title', locale)}</h2>{featured.category && <p className="mt-1 text-[13px] text-sg-cardinal font-semibold">{ko ? featured.category : (featured as any).category_en || featured.category}</p>}<p className="mt-3 text-[15px] leading-relaxed text-sg-gray11">{t(featured, 'excerpt', locale)}</p></div>
         </div>
       )}

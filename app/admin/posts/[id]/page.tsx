@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase-server';
+import { requireAdmin } from '@/lib/admin';
 import PostForm, { DeletePostButton } from '@/components/admin/PostForm';
 import { notFound } from 'next/navigation';
 import { serviceClient, listVersions, HISTORY_DAYS } from '@/lib/vault';
@@ -10,11 +10,12 @@ const kst = (iso: string) => new Date(Date.parse(iso) + 9 * 3600e3).toISOString(
 export default async function EditPost(
   props: { params: Promise<{ id: string }>; searchParams: Promise<{ board?: string; restored?: string }> }
 ) {
+  const auth = await requireAdmin(); if (!auth) return null;   // 아래 History가 service-role로 수정 이력(제목·편집자 메일)을 읽으므로 페이지에서도 검사
   const searchParams = await props.searchParams;
   const params = await props.params;
   const isNew = params.id === 'new';
   let post: any = null;
-  if (!isNew) { const sb = await createClient(); const { data } = await sb.from('posts').select('*').eq('id', Number(params.id)).single(); if (!data) notFound(); post = data; }
+  if (!isNew) { const { data } = await auth.sb.from('posts').select('*').eq('id', Number(params.id)).single(); if (!data) notFound(); post = data; }
   return (
     <div>
       <div className="flex items-center justify-between"><h1 className="text-2xl font-bold">{isNew ? '새 게시글' : `게시글 수정 #${post.id}`}</h1>{post && <DeletePostButton id={post.id} board={post.board} />}</div>

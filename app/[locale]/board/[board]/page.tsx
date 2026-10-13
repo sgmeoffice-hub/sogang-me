@@ -2,13 +2,13 @@ import Link from '@/components/Link';
 import PageHero from '@/components/PageHero';
 import PostCard, { fmtDate } from '@/components/PostCard';
 import { PromoView, CapstoneView, FestivalView, VideosView } from '@/components/BoardViews';
-import { getPosts } from '@/lib/data';
+import { getPosts, first } from '@/lib/data';
 import { boards, boardSection } from '@/lib/nav';
 import { t, T, authorLabel, type Locale } from '@/lib/i18n';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { facultyNames, peopleEn } from '@/lib/names';
 import { pageMeta, navLabel } from '@/lib/seo';
-export const revalidate = 600; // 60초 → 10분(2026-09-25 Supabase 전송량 절감): 글 저장·삭제는 즉시 갱신되고, 목록의 조회수만 최대 10분 늦게 바뀐다
+export const revalidate = 600; // searchParams(?page·?q)를 읽어 매 요청 렌더링되므로 실제 캐시는 getPosts(lib/data.ts, 1시간·태그 'posts')가 맡는다: 글 저장·삭제는 즉시 갱신, 목록의 조회수만 최대 1시간 늦게 바뀐다(2026-10-13)
 const PER = 15;
 const intros: Record<string, [string, string]> = {
   promo: ['고등학생·자유전공학부 학생을 위한 기계공학과 소개 자료입니다. 클릭하면 자료 소개와 PDF 열람·다운로드로 이동합니다.', 'Introductory materials for prospective and liberal-major students. Open a card to read more or download the PDF.'],
@@ -22,23 +22,25 @@ export async function generateMetadata(props: { params: Promise<{ locale: Locale
   const path = `/board/${params.board}`; return pageMeta(params.locale, path, { title: navLabel(params.locale, path) || T(params.locale, params.board as any) });
 }
 export default async function BoardList(
-  props: { params: Promise<{ locale: Locale; board: string }>; searchParams: Promise<{ page?: string; q?: string; year?: string }> }
+  props: { params: Promise<{ locale: Locale; board: string }>; searchParams: Promise<{ page?: string | string[]; q?: string | string[]; year?: string | string[] }> }
 ) {
   const searchParams = await props.searchParams;
   const params = await props.params;
   const { locale: l, board } = params; const ko = l === 'ko';
   if (!(boards as readonly string[]).includes(board)) notFound();
   const special = ['promo', 'capstone', 'festival', 'videos'].includes(board);
-  const pageN = Number(searchParams.page); // 숫자가 아니면 NaN → 1페이지로 (NaN이 range()에 흘러가 빈 화면이 되지 않게)
-  const page = Number.isFinite(pageN) && pageN >= 1 ? Math.floor(pageN) : 1; const q = searchParams.q || '';
+  // 같은 키가 반복된 주소(?q=a&q=b)는 배열로 오므로 first()로 첫 값만 — 배열에 .trim()이 호출돼 500이 나던 문제(2026-10-13)
+  const pageN = Number(first(searchParams.page)); // 숫자가 아니면 NaN → 1페이지로 (NaN이 range()에 흘러가 빈 화면이 되지 않게)
+  const page = Number.isFinite(pageN) && pageN >= 1 ? Math.floor(pageN) : 1; const q = first(searchParams.q); const year = first(searchParams.year) || undefined;
+  const href = (p: number) => `/${l}/board/${board}?page=${p}${q ? `&q=${encodeURIComponent(q)}` : ''}`;
   const { posts: raw, total } = await getPosts(board, special ? 1 : page, special ? 200 : PER, q);
+  const pages = Math.max(1, Math.ceil(total / PER));
+  if (!special && page > pages) redirect(href(pages)); // 범위를 벗어난 쪽 번호(옛 북마크·크롤러)는 마지막 쪽으로 — '총 0건'에 쪽 번호도 없는 빈 화면 대신
   // 캡스톤·학술제의 조원·지도교수는 국문으로 입력된다 → 영문 페이지에서는 교수는 공식 영문 이름, 학생은 로마자로
   const people = !ko && raw.some((p) => p.advisor || p.members);
   const names = people ? await facultyNames() : [];
   const posts = people ? raw.map((p) => ({ ...p, advisor: p.advisor && peopleEn(names, p.advisor), members: p.members && peopleEn(names, p.members) })) : raw;
-  const pages = Math.max(1, Math.ceil(total / PER));
   const [section, current] = boardSection[board] || ['board', board];
-  const href = (p: number) => `/${l}/board/${board}?page=${p}${q ? `&q=${encodeURIComponent(q)}` : ''}`;
   return (<>
     <PageHero locale={l} section={section} current={current} />
     <div className="container-site py-12">
@@ -51,7 +53,7 @@ export default async function BoardList(
       )}
       {board === 'promo' ? <PromoView posts={posts} locale={l} />
        : board === 'capstone' ? <CapstoneView posts={posts} locale={l} />
-       : board === 'festival' ? <FestivalView posts={posts} locale={l} year={searchParams.year} />
+       : board === 'festival' ? <FestivalView posts={posts} locale={l} year={year} />
        : board === 'videos' ? <VideosView posts={posts} locale={l} />
        : posts.length === 0 ? <p className="py-16 text-center text-sg-gray9 border border-dashed border-sg-line">{T(l, 'noPosts')}</p>
        : board === 'gallery' ? (

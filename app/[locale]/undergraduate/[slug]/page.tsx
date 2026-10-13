@@ -24,14 +24,15 @@ export default async function UG(props: { params: Promise<{ locale: Locale; slug
   if (!slugs.includes(slug)) notFound();
   if (slug === 'calendar') return <StaticPage locale={l} section="undergraduate" slug="calendar"><AcademicCalendar locale={l} /></StaticPage>;
   if (slug === 'ureca') {
-    const labs = (await getFaculty(false)).filter((f: any) => f.lab_ko);
+    // 폼이 쓰는 다섯 칸만 추려 넘긴다 — 교수 행 전체(약력·연구·사진…)를 넘기면 클라이언트 페이로드에 17명치가 통째로 실린다(약 9KB, 2026-10-13)
+    const labs = (await getFaculty(false)).filter((f: any) => f.lab_ko).map((f: any) => ({ id: f.id, lab_ko: f.lab_ko, lab_en: f.lab_en ?? null, name_ko: f.name_ko, name_en: f.name_en ?? null }));
     return (
       <StaticPage locale={l} section="undergraduate" slug="ureca">
         <div className="mt-12 border-t-2 border-sg-ink pt-8">
           <p className="eyebrow">URECA Intern</p>
           <h2 className="h-sub mt-2 mb-2">{ko ? 'URECA 인턴 지원하기' : 'Apply for URECA Intern'}</h2>
           <p className="text-[15px] text-sg-gray11 mb-6">{ko ? '기계공학과 2~4학년 학생은 아래 양식으로 지원할 수 있습니다. 지원 기간(봄학기·여름방학·가을학기·겨울방학)을 선택하고 지망 연구실을 1·2·3순위로 표시하세요. 1지망부터 순서대로 해당 교수님께서 선발 여부를 결정하며, 선발되면 학과사무실에 서약서를 제출한 후 인턴이 시작됩니다.' : 'ME students in years 2–4 may apply below. Choose the term and rank up to three labs. Professors decide in order of preference; selected students submit a pledge to the department office before starting.'}</p>
-          <UrecaForm locale={l} labs={labs as any} />
+          <UrecaForm locale={l} labs={labs} />
         </div>
       </StaticPage>
     );
@@ -122,7 +123,7 @@ export default async function UG(props: { params: Promise<{ locale: Locale; slug
           <div><p className="eyebrow">{ko ? '전공소개 자료' : 'Introduction deck'}</p><h3 className="h-sub mt-1">{ko ? '자유전공학부 학생을 위한 전공 안내' : 'Major guide for liberal-major students'}</h3></div>
           <Link href={`/${l}/board/promo`} className="text-[14px] font-semibold text-sg-cardinal hover:underline">{ko ? '전공 홍보자료 게시판 →' : 'All intro materials →'}</Link>
         </div>
-        <SlideDeck slides={introSlides} download="/docs/sogang-me-physical-ai-intro.pdf" label={ko ? '서강대 기계공학과 전공소개 (Physical AI)' : 'Sogang ME · Physical AI'} />
+        <SlideDeck slides={introSlides} download="/docs/sogang-me-physical-ai-intro.pdf" label={ko ? '서강대 기계공학과 전공소개 (Physical AI)' : 'Sogang ME · Physical AI'} locale={l} />
       </section>
     </StaticPage>
   );

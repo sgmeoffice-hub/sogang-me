@@ -1,4 +1,5 @@
 import { wrapTables } from '@/lib/html';
+import { normalizeHtml } from '@/lib/html-normalize';
 import PageHero from '@/components/PageHero';
 import { staticPages } from '@/content';
 import { T, type Locale } from '@/lib/i18n';
@@ -16,6 +17,6 @@ export default async function Policy(props: { params: Promise<{ locale: Locale; 
   const c = staticPages[`policy/${params.slug}`]; if (!c) notFound();
   return (<>
     <PageHero locale={params.locale} section="" title={T(params.locale, titles[params.slug])} />
-    <article className="container-site py-14 max-w-3xl prose-sg" dangerouslySetInnerHTML={{ __html: wrapTables(params.locale === 'en' ? c.en : c.ko) }} />
+    <article className="container-site py-14 max-w-3xl prose-sg" dangerouslySetInnerHTML={{ __html: wrapTables(normalizeHtml(params.locale === 'en' ? c.en : c.ko)) }} />
   </>);
 }

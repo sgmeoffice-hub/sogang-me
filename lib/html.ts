@@ -1,8 +1,10 @@
-/** Convert admin input to safe-ish display HTML. Plain text (no block tags) gets paragraphs/line breaks. */
+/** Convert admin input to safe-ish display HTML. Plain text (no block tags) gets paragraphs/line breaks.
+ *  블록 태그 목록에 pre/hr/section 등을 추가 — <pre> 본문이 <p>로 감싸이고 줄마다 <br>이 끼어 저장되던 문제(2026-10-13).
+ *  인라인 태그만 있는 옛 글(<a>·<span> + 줄바꿈)은 지금처럼 문단으로 만들어야 하므로 '아무 태그나'로 넓히지 않는다. */
 export function toHtml(input: string | null | undefined): string {
   const s = (input || '').trim();
   if (!s) return '';
-  if (/<(p|div|br|ul|ol|h[1-6]|table|blockquote|img|iframe|figure)\b/i.test(s)) return s;
+  if (/<(p|div|br|ul|ol|h[1-6]|table|blockquote|img|iframe|figure|pre|hr|section|article|dl|video|audio|details|header|footer|nav|main|aside)\b/i.test(s)) return s;
   return s.split(/\n{2,}/).map((para) => `<p>${para.replace(/\n/g, '<br>')}</p>`).join('\n');
 }
 /** 화면 표시용(저장 금지): 본문 표를 가로 스크롤 상자로 감싼다 — 옛 글·교과과정의 넓은 표가 모바일(390px)에서 페이지 전체를 넓혀

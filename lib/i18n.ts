@@ -64,4 +64,5 @@ export const ui = {
   },
 } as const;
 export type UIKey = keyof typeof ui.ko;
-export const T = (l: Locale, k: UIKey) => ui[l][k];
+// 검증 전의 주소 조각이 로케일로 들어와도(/x.y/…, 미들웨어가 건너뛰는 점 포함 경로) 던지지 않고 국문으로 — 404는 레이아웃이 낸다(2026-10-13)
+export const T = (l: Locale, k: UIKey) => (ui[l] ?? ui.ko)[k];

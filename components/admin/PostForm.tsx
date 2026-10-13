@@ -1,8 +1,9 @@
 'use client';
 import { useState } from 'react';
 import RichEditor from './RichEditor';
-import Uploader from './Uploader';
+import Uploader, { FILE_ACCEPT } from './Uploader';
 import TranslateButton from './TranslateButton';
+import SubmitButton from './SubmitButton';
 import { boards, festivalCategories } from '@/lib/nav';
 import { ui } from '@/lib/i18n';
 import { savePost, deletePost } from '@/app/admin/actions';
@@ -68,7 +69,7 @@ export default function PostForm({ post, defaultBoard }: { post?: any; defaultBo
         <div className="border border-sg-line bg-white p-4">
           <p className="text-[13px] font-semibold">첨부파일</p>
           <ul className="mt-2 space-y-1 text-[13px]">{files.map((f, i) => <li key={i} className="flex justify-between gap-2"><a href={f.url} target="_blank" rel="noreferrer" className="truncate hover:text-sg-red">{f.name}</a><button type="button" onClick={() => setFiles(files.filter((_, j) => j !== i))} className="text-sg-red">삭제</button></li>)}</ul>
-          <div className="mt-3"><Uploader folder="files" multiple label="+ 파일 추가" onDone={(fs) => setFiles([...files, ...fs])} /></div>
+          <div className="mt-3"><Uploader folder="files" accept={FILE_ACCEPT} multiple label="+ 파일 추가" onDone={(fs) => setFiles([...files, ...fs])} /></div>
         </div>
       </section>
       <div className="flex flex-wrap gap-5 text-[13px]">
@@ -76,11 +77,12 @@ export default function PostForm({ post, defaultBoard }: { post?: any; defaultBo
         <label className="flex items-center gap-2"><input type="checkbox" name="show_on_home" defaultChecked={post ? post.show_on_home : true} /> 메인 페이지에 노출</label>
         <label className="flex items-center gap-2"><input type="checkbox" name="published" defaultChecked={post ? post.published : true} /> 공개</label>
       </div>
-      <div className="flex gap-3"><button className="btn-primary">저장</button></div>
+      {/* 저장은 자동 번역을 기다리는 3~6초 동안 다시 눌리면 새 글이 중복 생성되므로(서버 액션은 중복 호출을 걸러 주지 않음) 처리 중 비활성화 */}
+      <div className="flex gap-3"><SubmitButton className="btn-primary disabled:opacity-60" pendingText="저장 중…">저장</SubmitButton></div>
     </form>
   );
 }
 
 export function DeletePostButton({ id, board }: { id: number; board: string }) {
-  return <form action={deletePost} onSubmit={(e) => { if (!confirm('이 게시글을 삭제할까요? 30일 동안 휴지통(관리자 › 백업·휴지통)에 보관되어 복구할 수 있습니다.')) e.preventDefault(); }}><input type="hidden" name="id" value={id} /><input type="hidden" name="board" value={board} /><button className="text-[13px] text-sg-red underline">게시글 삭제</button></form>;
+  return <form action={deletePost}><input type="hidden" name="id" value={id} /><input type="hidden" name="board" value={board} /><SubmitButton className="text-[13px] text-sg-red underline" pendingText="삭제 중…" confirm="이 게시글을 삭제할까요? 30일 동안 휴지통(관리자 › 백업·휴지통)에 보관되어 복구할 수 있습니다.">게시글 삭제</SubmitButton></form>;
 }

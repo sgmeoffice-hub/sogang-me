@@ -1,8 +1,7 @@
-import Link from 'next/link';
-import { createClient } from '@/lib/supabase-server';
+import Link from '@/components/Link';   // prefetch 끔 — 관리자 링크는 모두 force-dynamic(인증 조회 포함)이라 미리 받아 오면 요청만 는다(무료 한도)
 import LoginForm from '@/components/admin/LoginForm';
 import { signOut } from './actions';
-import { adminBase } from '@/lib/admin';
+import { adminBase, adminSession } from '@/lib/admin';
 import TranslateRetry from '@/components/admin/TranslateRetry';
 
 export const dynamic = 'force-dynamic';
@@ -10,10 +9,9 @@ export const metadata = { title: '관리자 · 서강대학교 기계공학과',
 
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const sb = await createClient();
-  const { data: { user } } = await sb.auth.getUser();
+  // 각 page.tsx의 requireAdmin()과 같은 조회를 공유한다(React cache) — 레이아웃은 로그인 폼/403 UI만 담당
+  const { user, ok } = await adminSession();
   if (!user) return <LoginForm />;
-  const { data: ok } = await sb.rpc('is_admin');
   if (!ok) return (
     <main className="min-h-screen grid place-items-center px-6 text-center">
       <div><p className="eyebrow">403</p><h1 className="text-2xl font-bold mt-2">관리자 권한이 없습니다</h1>

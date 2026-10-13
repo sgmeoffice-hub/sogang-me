@@ -2,7 +2,7 @@ import Link from '@/components/Link';
 import PageHero from '@/components/PageHero';
 import ReservationForm from '@/components/ReservationForm';
 import ReservationCalendar from '@/components/ReservationCalendar';
-import { getReservations } from '@/lib/data';
+import { getReservations, first } from '@/lib/data';
 import { facilities } from '@/lib/nav';
 import { T, type Locale } from '@/lib/i18n';
 import { facultyNames, peopleEn } from '@/lib/names';
@@ -14,22 +14,29 @@ export async function generateMetadata(props: { params: Promise<{ locale: Locale
   return pageMeta(params.locale, '/reservation', { title: navLabel(params.locale, '/reservation') });
 }
 export default async function Reservation(
-  props: { params: Promise<{ locale: Locale }>; searchParams: Promise<{ f?: string; y?: string; m?: string }> }
+  props: { params: Promise<{ locale: Locale }>; searchParams: Promise<{ f?: string | string[]; y?: string | string[]; m?: string | string[] }> }
 ) {
   const searchParams = await props.searchParams;
   const params = await props.params;
   const l = params.locale; const ko = l === 'ko';
-  // 기본 시설은 사용 빈도가 가장 높은 첫 항목(학과회의실)
-  const facility = facilities.some((x) => x.id === searchParams.f) ? searchParams.f! : facilities[0].id;
+  // 같은 키가 반복된 주소(?f=a&f=b)는 배열로 오므로 first()로 첫 값만(2026-10-13). 기본 시설은 사용 빈도가 가장 높은 첫 항목(학과회의실)
+  const fq = first(searchParams.f);
+  const facility = facilities.some((x) => x.id === fq) ? fq : facilities[0].id;
   const now = new Date(Date.now() + 9 * 3600 * 1000); // KST 기준 (서버는 UTC)
-  const yN = Number(searchParams.y); const mN = Number(searchParams.m); // 잘못된 값이면 이번 달로 (깨진 달력 방지)
-  const y = Number.isInteger(yN) && yN >= 2000 && yN <= 2100 ? yN : now.getUTCFullYear();
+  const cur = now.getUTCFullYear();
+  // 연도는 작년~내년만 — 2000~2100을 허용하던 때는 달력의 이전/다음 달 링크가 끝없는 크롤 공간이 되어 스크레이퍼가 월마다 함수 호출·조회 캐시를 쌓았다(2026-10-13 무료 한도).
+  // 예약 자료는 1년 보관(개인정보처리방침)이라 그 밖의 달은 어차피 비어 있다. 범위 밖·잘못된 값이면 404 대신 이번 달로(봇도 같은 한 페이지로 모이고 사용자는 달력을 잃지 않는다).
+  const minY = cur - 1, maxY = cur + 1;
+  const yN = Number(first(searchParams.y)); const mN = Number(first(searchParams.m));
+  const y = Number.isInteger(yN) && yN >= minY && yN <= maxY ? yN : cur;
   const m = Number.isInteger(mN) && mN >= 1 && mN <= 12 ? mN : now.getUTCMonth() + 1;
   const raw = await getReservations(facility, y, m);
   // 예약자 칸은 국문으로 입력된다("정헌재 교수님") → 영문 페이지에서는 교수는 공식 영문 이름, 학생 이름은 로마자로(일반 낱말은 그대로)
   const names = ko ? [] : await facultyNames();
   const rows = ko ? raw : (raw as any[]).map((r) => ({ ...r, user_name: peopleEn(names, r.user_name, 3) }));
-  const prev = m === 1 ? { y: y - 1, m: 12 } : { y, m: m - 1 }; const next = m === 12 ? { y: y + 1, m: 1 } : { y, m: m + 1 };
+  // 이전/다음 달 링크도 위 범위를 벗어나지 않는다(끝에서는 제자리 링크)
+  const prev = m === 1 ? (y > minY ? { y: y - 1, m: 12 } : { y, m }) : { y, m: m - 1 };
+  const next = m === 12 ? (y < maxY ? { y: y + 1, m: 1 } : { y, m }) : { y, m: m + 1 };
   const fac = facilities.find((x) => x.id === facility)!;
   const todayStr = now.toISOString().slice(0, 10);
   const href = (yy: number, mm: number) => `/${l}/reservation?f=${facility}&y=${yy}&m=${mm}`;
@@ -47,7 +54,8 @@ export default async function Reservation(
         title={`${ko ? `${y}년 ${m}월` : new Date(y, m - 1).toLocaleString('en', { month: 'long', year: 'numeric' })} · ${ko ? fac.ko : fac.en}`}
         prevHref={href(prev.y, prev.m)} nextHref={href(next.y, next.m)} />
       <h2 className="h-section mt-14 mb-6">{T(l, 'reserve')}</h2>
-      <ReservationForm locale={l} facility={facility} />
+      {/* key: 시설 탭은 같은 경로 안의 이동이라 폼이 재사용된다 — key가 없으면 select의 defaultValue(마운트 때만 적용)와 '접수 완료' 상태가 이전 시설 것으로 남아 다른 시설로 신청됐다 */}
+      <ReservationForm key={facility} locale={l} facility={facility} />
     </div>
   </>);
 }

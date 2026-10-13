@@ -10,9 +10,11 @@ export default function TranslateButton({ pairs }: { pairs: [string, string][] }
         const form = (e.target as HTMLElement).closest('form')!; setBusy(true); setMsg('');
         const fields: Record<string, string> = {};
         for (const [ko] of pairs) { const el = form.elements.namedItem(ko) as HTMLInputElement | HTMLTextAreaElement | null; if (el?.value) fields[ko] = el.value; }
-        const r = await fetch('/api/translate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields }) });
-        const j = await r.json();
-        if (!r.ok) { setMsg(j.error || '실패'); setBusy(false); return; }
+        // 네트워크 오류나 게이트웨이 타임아웃(HTML 본문)이면 fetch/json이 던져 버튼이 '번역 중…'에 영원히 멈추고, 새로고침하면 쓰던 내용이 날아갔다(2026-10-13)
+        let r: Response, j: any;
+        try { r = await fetch('/api/translate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fields }) }); j = await r.json().catch(() => ({})); }
+        catch { setMsg('번역 요청에 실패했습니다. 잠시 후 다시 시도해 주세요.'); setBusy(false); return; }
+        if (!r.ok || !j.fields) { setMsg(j.error || '번역 요청에 실패했습니다. 잠시 후 다시 시도해 주세요.'); setBusy(false); return; }
         for (const [ko, en] of pairs) {
           const el = form.elements.namedItem(en) as HTMLInputElement | HTMLTextAreaElement | null;
           if (!el || !j.fields[ko]) continue;

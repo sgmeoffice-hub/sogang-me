@@ -1,24 +1,26 @@
-import { createClient } from '@/lib/supabase-server';
+import { requireAdmin } from '@/lib/admin';
 import { saveFaculty, deleteFaculty } from '@/app/admin/actions';
 import RichEditor from '@/components/admin/RichEditor';
 import TranslateButton from '@/components/admin/TranslateButton';
 import PhotoField from '@/components/admin/PhotoField';
+import SubmitButton from '@/components/admin/SubmitButton';
 import { areas } from '@/content/areas';
 import { researchGroupDefs } from '@/lib/groups';
 import { buildings, parseOffice } from '@/lib/buildings';
 import { notFound } from 'next/navigation';
 
 export default async function EditFaculty(props: { params: Promise<{ id: string }> }) {
+  const auth = await requireAdmin(); if (!auth) return null;
   const params = await props.params;
   const isNew = params.id === 'new'; let f: any = null;
-  if (!isNew) { const sb = await createClient(); const { data } = await sb.from('faculty').select('*').eq('id', Number(params.id)).single(); if (!data) notFound(); f = data; }
+  if (!isNew) { const { data } = await auth.sb.from('faculty').select('*').eq('id', Number(params.id)).single(); if (!data) notFound(); f = data; }
   const legacy = parseOffice(f?.office);
   const curBuilding = f?.building || legacy.building || '';
   const curRoom = f?.room || legacy.room || '';
   const I = ({ n, l, v, ph }: { n: string; l: string; v?: string; ph?: string }) => <label className="block text-[13px]">{l}<input name={n} defaultValue={v || ''} placeholder={ph} className="input mt-1" /></label>;
   return (<div>
     <div className="flex items-center justify-between"><h1 className="text-2xl font-bold">{isNew ? '교수 추가' : `${f.name_ko} 교수`}</h1>
-      {f && <form action={deleteFaculty}><input type="hidden" name="id" value={f.id} /><button className="text-[13px] text-sg-red underline">삭제</button></form>}</div>
+      {f && <form action={deleteFaculty}><input type="hidden" name="id" value={f.id} /><SubmitButton className="text-[13px] text-sg-red underline" pendingText="삭제 중…" confirm="이 교수 정보를 삭제할까요? 사진 파일도 함께 지워지며 되돌릴 수 없습니다.">삭제</SubmitButton></form>}</div>
     <form action={saveFaculty} className="mt-6 max-w-4xl space-y-5">
       {f && <input type="hidden" name="id" value={f.id} />}
       <div className="grid gap-4 md:grid-cols-[160px_1fr]">
@@ -37,7 +39,7 @@ export default async function EditFaculty(props: { params: Promise<{ id: string 
           <I n="email" l="이메일" v={f?.email} /><I n="tel" l="전화" v={f?.tel} ph="02-705-0000" />
           <I n="lab_ko" l="연구실명 (한국어)" v={f?.lab_ko} /><I n="lab_en" l="Laboratory (English)" v={f?.lab_en} />
           <I n="lab_url" l="연구실 홈페이지" v={f?.lab_url} ph="https://" /><label className="block text-[13px]">건물<select name="building" defaultValue={curBuilding} className="input mt-1"><option value="">— 선택 —</option>{buildings.map((b) => <option key={b.code} value={b.code}>{b.ko} ({b.code})</option>)}</select></label>
-          <label className="block text-[13px]">호실<input name="room" defaultValue={curRoom} placeholder="618" className="input mt-1" /><span className="block text-[11px] text-sg-steel mt-1">숫자만 입력 (국문 "리치과학관(R) 618호" / 영문 "New Ricci Hall (R) Room 618"로 자동 표기)</span></label>
+          <label className="block text-[13px]">호실<input name="room" defaultValue={curRoom} placeholder="618" className="input mt-1" /><span className="block text-[11px] text-sg-steel mt-1">숫자만 입력 (국문 "리치과학관(R) 618호" / 영문 "Ricci Hall (R) Room 618"로 자동 표기)</span></label>
           <label className="block text-[13px]">연구 분야 (4대 기초전공)<select name="field" defaultValue={f?.field === 'chair' ? '' : f?.field || ''} className="input mt-1"><option value="">—</option>{areas.map((a) => <option key={a.id} value={a.id}>{a.ko}</option>)}</select>{f?.field === 'chair' && <span className="block text-[11px] text-sg-cardinal mt-1">※ 석좌→전임으로 바꿀 때는 연구 분야를 함께 선택하세요 (비워 두면 기초전공 연구실 표에 나오지 않습니다)</span>}</label>
           <I n="sort_order" l="정렬 순서 (작을수록 앞)" v={String(f?.sort_order ?? 100)} />
         </div>
@@ -64,7 +66,8 @@ export default async function EditFaculty(props: { params: Promise<{ id: string 
         </label>
         <label className="flex items-center gap-2"><input type="checkbox" name="published" defaultChecked={f ? f.published : true} /> 공개</label>
       </div>
-      <button className="btn-primary">저장</button>
+      {/* 저장은 번역 대기(3~6초) 동안 두 번 눌리면 새 교수 행이 중복 생성되므로 처리 중 비활성화 */}
+      <SubmitButton className="btn-primary disabled:opacity-60" pendingText="저장 중…">저장</SubmitButton>
     </form>
   </div>);
 }

@@ -12,18 +12,25 @@ const FAMILY_ALIASES: Record<string, string[]> = {
   jeon: ['chun', 'jun', 'jeun', 'chon', 'chen'], kang: ['gang', 'khang'], song: ['soung'], chung: ['jeong', 'jung'], kwon: ['gwon', 'kweon'],
   jang: ['chang'], yoon: ['yun', 'youn'], lim: ['im', 'rim'], han: ['hahn'], oh: ['o'], seo: ['suh', 'sur'], moon: ['mun'], yang: ['ryang'],
 };
-/** 이름(given name)의 자음 골격: 모음·하이픈 제거, 유사 자음 통합 → Seokhwan/Suk-hwan/Seok-Hwan 이 모두 같은 키 */
+/** 이름(given name)의 골격: 하이픈·활음(w/y)·h 제거, 유사 자음 통합, 모음은 다섯 부류(a / e·ae / i·ee / eu / o·u·eo·oo)로만 남긴다
+ *  → Seokhwan/Suk-hwan/Seok-Hwan, Nahmkeon/Nam-geon, Chung-soo/Choongsoo 는 같은 키.
+ *  모음을 전부 버리던 예전 골격은 Seungwon/Sangwon→Sungwon, Hyunji/Eunji/Inje→Heonjae 처럼 학생·공저자 이름까지 교수 이름으로 바꿔 놓았다(2026-10-13).
+ *  h도 제거: Nahmkeon/Nam-geon, Seokhwan/Suk-hwan 이 같은 키가 되게 */
 export function skeleton(given: string): string {
   return given.toLowerCase().replace(/[^a-z]/g, '')
     .replace(/ch/g, 'j').replace(/sh/g, 's').replace(/ph/g, 'p').replace(/th/g, 't')
     .replace(/k/g, 'g').replace(/p/g, 'b').replace(/t/g, 'd').replace(/r/g, 'l').replace(/c/g, 'g')
-    .replace(/[aeiouwyh]/g, '');   // h도 제거: Nahmkeon/Nam-geon, Seokhwan/Suk-hwan 이 같은 키가 되게
+    .replace(/[wyh]/g, '')
+    .replace(/[aeiou]+/g, (v) => (v === 'eu' ? 'u' : v === 'ee' ? 'i' : /^a+$/.test(v) ? 'a' : /[ou]/.test(v) ? 'o' : /e/.test(v) ? 'e' : 'i'));
 }
+/** 교수 영문 이름의 비교용 표기(소문자, 하이픈·공백 제거) — 다른 교수의 공식 표기와 정확히 같은 후보는 치환하지 않기 위해 */
+const flat = (s: string) => s.toLowerCase().replace(/[^a-z]/g, '');
 
-/** 번역 결과의 변형 로마자를 공식 표기로 바꾼다. rows 는 원문에 등장하는 교수만 넘길 것.
+/** 번역 결과의 변형 로마자를 공식 표기로 바꾼다. rows 는 원문에 등장하는 교수만 넘길 것. all 은 교수진 전체(기본값 rows) —
+ *  2단계 후보가 다른 교수의 공식 표기와 정확히 같으면 그 교수의 이름이므로 건드리지 않는다.
  *  1단계: 같은 철자에 하이픈·공백·성-이름 순서만 다른 경우 (Seok-Hwan Jeong / Jeong Seok-hwan / Jeong, Seokhwan)
- *  2단계: 성이 같거나 흔한 이형이고 이름의 자음 골격이 같은 경우 (Shin Chung-soo → Choongsoo Shin, Jung Suk-hwan → Seokhwan Jeong) */
-export function enforceNames(rows: NameRow[], s: string): string {
+ *  2단계: 성이 같거나 흔한 이형이고 이름의 골격이 같은 경우 (Shin Chung-soo → Choongsoo Shin, Jung Suk-hwan → Seokhwan Jeong) */
+export function enforceNames(rows: NameRow[], s: string, all: NameRow[] = rows): string {
   let out = s;
   for (const r of rows) {
     const parts = r.en.split(' ');
@@ -34,23 +41,26 @@ export function enforceNames(rows: NameRow[], s: string): string {
 
     const fams = [family.toLowerCase(), ...(FAMILY_ALIASES[family.toLowerCase()] || [])].map(esc).join('|');
     const sk = skeleton(given);
+    const others = new Set(all.filter((x) => x.en !== r.en).map((x) => flat(x.en)));
     // 대소문자 무시로 찾되, 성·이름 모두 대문자로 시작하는 토큰만 인정한다 ("sin 함수" 같은 일반 단어 배제)
     const cap = (w: string) => /^[A-Z]/.test(w);
     // 이름 후보는 '단어 1개(Chung-soo, Chungsoo)' 또는 '단어 2개(Chung Soo)'. 앞뒤 단어(Professor, was …)를 이름에 삼키지 않도록
     // 최대 2단어를 잡은 뒤, 성에 붙은 쪽부터 1단어 → 2단어 순으로 골격을 맞춰 보고 맞는 부분만 바꾼다.
+    // 골격이 맞아도 '이름+성'이 다른 교수의 공식 표기와 같으면(예: 같은 성의 두 교수) 그 교수 이름이므로 두 번째 교수로 바꾸지 않는다.
     const word = '[A-Za-z][a-z]*(?:-[A-Za-z][a-z]*)?';
-    const matchGiven = (toks: string[]) => { for (const n of [1, 2]) { if (toks.length < n) break; const c = toks.slice(0, n); if (c.every(cap) && skeleton(c.join('')) === sk) return n; } return 0; };
-    // 성 + 이름 (+ 뒤따르는 단어)
-    out = out.replace(new RegExp(`(^|[^A-Za-z])(${fams}),?\\s+(${word}(?:\\s+${word})?)(?![A-Za-z])`, 'gi'), (m, pre, fam, gv) => {
+    const matchGiven = (toks: string[], fam: string) => { for (const n of [1, 2]) { if (toks.length < n) break; const c = toks.slice(0, n); if (c.every(cap) && skeleton(c.join('')) === sk && !others.has(flat(c.join('') + fam))) return n; } return 0; };
+    // 성 + 이름 (+ 뒤따르는 단어). 성 뒤의 쉼표는 1단계(정확한 철자)에서만 인정한다 — "Sukhyun Jeong, Sugeun Jung" 같은 이름 목록에서
+    // 쉼표 앞 성을 다음 사람 이름과 묶어 "Sukhyun Seokhwan Jeong Jung" 으로 망가뜨리던 문제(2026-10-13)
+    out = out.replace(new RegExp(`(^|[^A-Za-z])(${fams})\\s+(${word}(?:\\s+${word})?)(?![A-Za-z])`, 'gi'), (m, pre, fam, gv) => {
       if (!cap(fam)) return m;
-      const toks = gv.split(/\s+/); const n = matchGiven(toks);
+      const toks = gv.split(/\s+/); const n = matchGiven(toks, fam);
       return n ? pre + r.en + toks.slice(n).map((t: string) => ' ' + t).join('') : m;
     });
     // (앞선 단어 +) 이름 + 성
     out = out.replace(new RegExp(`(^|[^A-Za-z])((?:${word}\\s+)?${word})\\s+(${fams})(?![A-Za-z])`, 'gi'), (m, pre, gv, fam) => {
       if (!cap(fam)) return m;
       // 성에 붙은 쪽(뒤)부터: 마지막 1단어, 안 되면 마지막 2단어
-      const toks = gv.split(/\s+/); const n = matchGiven(toks.slice(-1)) ? 1 : toks.length >= 2 && matchGiven([toks.slice(-2).join(' ')]) ? 2 : 0;
+      const toks = gv.split(/\s+/); const n = matchGiven(toks.slice(-1), fam) ? 1 : toks.length >= 2 && matchGiven([toks.slice(-2).join(' ')], fam) ? 2 : 0;
       return n ? pre + toks.slice(0, toks.length - n).map((t: string) => t + ' ').join('') + r.en : m;
     });
   }

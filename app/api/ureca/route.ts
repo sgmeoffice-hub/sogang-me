@@ -4,20 +4,25 @@ import { notifyAdmin } from '@/lib/notify';
 import { escapeHtml as esc } from '@/lib/html';
 import { allow, clientIp } from '@/lib/ratelimit';
 
+/** 오류 응답: error(국문, 비UI 호출자용) + code(폼이 보는 언어로 바꿔 보여준다 — components/UrecaForm). 2026-10-13 */
+const fail = (code: string, error: string, status: number) => NextResponse.json({ error, code }, { status });
+
 export async function POST(req: Request) {
   if (!allow(`ureca:${clientIp(req)}`, 5, 10 * 60 * 1000))
-    return NextResponse.json({ error: '요청이 너무 잦습니다. 잠시 후 다시 시도해 주세요.' }, { status: 429 });
-  const b = await req.json();
+    return fail('rate_limited', '요청이 너무 잦습니다. 잠시 후 다시 시도해 주세요.', 429);
+  const b = await req.json().catch(() => null);
+  if (!b || typeof b !== 'object') return fail('invalid', '입력값이 올바르지 않습니다.', 400);
   const choices = (Array.isArray(b.choices) ? b.choices : [])
     .map((c: any) => ({ rank: Number(c?.rank), lab: String(c?.lab || '').slice(0, 200), prof: String(c?.prof || '').slice(0, 100) }))
     .filter((c: any) => [1, 2, 3].includes(c.rank) && c.lab)
     .slice(0, 3);
   const row = { year: Number(b.year), term: String(b.term || '').slice(0, 20), name: String(b.name || '').slice(0, 60), student_id: String(b.student_id || '').slice(0, 30), semester: String(b.semester || '').slice(0, 30), phone: String(b.phone || '').slice(0, 40), email: String(b.email || '').slice(0, 120), choices, message: String(b.message || '').slice(0, 1000), status: 'pending' };
-  if (!row.year || row.year < 2000 || row.year > 2100 || !row.term || !row.name || !row.student_id || !row.email || !choices.length)
-    return NextResponse.json({ error: 'missing fields' }, { status: 400 });
+  if (!row.year || !row.term || !row.name || !row.student_id || !row.email || !choices.length) return fail('missing', '필수 항목이 비어 있습니다.', 400);
+  if (!Number.isInteger(row.year) || row.year < 2000 || row.year > 2100) return fail('invalid', '입력값이 올바르지 않습니다.', 400);
   const sb = createPublicClient();
   const { error } = await sb.from('ureca_applications').insert(row);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  // DB 오류 문구는 서버 로그에만 — 클라이언트에는 일반 문구(2026-10-13)
+  if (error) { console.error('[ureca] insert', error.message); return fail('db', '저장 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.', 500); }
   /* 같은 학생이 같은 연도·학기에 다시 제출하면 이전 지원서를 대체합니다 (마지막 제출본만 유지).
    * anon에는 select/delete 정책이 없으므로 security definer RPC(schema_v8)가 방금 넣은
    * 최신 행만 남기고 이전 pending 지원서를 지운다. RPC 미설치면 중복이 남고 관리자 화면에서 정리한다. */

@@ -29,19 +29,37 @@ function interleavedOrder(videos: HeroVideoItem[]) {
 export default function HeroRotator({ videos }: { videos: HeroVideoItem[] }) {
   const [order, setOrder] = useState<number[] | null>(null);
   const [pos, setPos] = useState(0);
+  const [live, setLive] = useState(true);   // 탭이 보이고 히어로가 화면 안에 있을 때만 순환·재생·다음 영상 로드
+  const root = useRef<HTMLDivElement>(null);
   const refs = useRef<(HTMLVideoElement | null)[]>([]);
   const loaded = useRef<Set<number>>(new Set());
+  const prevActive = useRef(-1);
 
   useEffect(() => {
     // 순서 셔플은 클라이언트에서만 (SSR 마크업 불일치 방지)
+    // 움직임 줄이기 설정·데이터 절약 모드에서는 영상을 아예 마운트하지 않는다 — 아래 CSS 포스터 슬라이드쇼가 그대로 보인다(14편 ≈ 13MB 절약, 2026-10-13)
+    const nav = navigator as Navigator & { connection?: { saveData?: boolean } };
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || nav.connection?.saveData) return;
     setOrder(interleavedOrder(videos));
   }, [videos.length]);
 
   useEffect(() => {
-    if (!order || order.length < 2) return;
+    // 숨은 탭·스크롤로 지나간 히어로는 멈춘다 — 안 보이는 동안 5.5초마다 다음 영상을 계속 내려받던 것(2026-10-13)
+    const el = root.current; if (!el) return;
+    let visible = !document.hidden, inView = true;
+    const sync = () => setLive(visible && inView);
+    const onVis = () => { visible = !document.hidden; sync(); };
+    document.addEventListener('visibilitychange', onVis);
+    const io = typeof IntersectionObserver !== 'undefined' ? new IntersectionObserver(([e]) => { inView = e.isIntersecting; sync(); }) : null;
+    io?.observe(el);
+    return () => { document.removeEventListener('visibilitychange', onVis); io?.disconnect(); };
+  }, []);
+
+  useEffect(() => {
+    if (!order || order.length < 2 || !live) return;
     const t = setInterval(() => setPos((p) => p + 1), INTERVAL_MS);
     return () => clearInterval(t);
-  }, [order]);
+  }, [order, live]);
 
   const n = order?.length || 0;
   const active = order ? order[pos % n] : -1;
@@ -49,22 +67,24 @@ export default function HeroRotator({ videos }: { videos: HeroVideoItem[] }) {
 
   // 현재 것은 재생, 다음 것은 미리 불러오기(첫 1회만), 나머지는 정지. 요소는 절대 갈아끼우지 않는다.
   useEffect(() => {
+    if (!live) { refs.current.forEach((v) => { if (v && !v.paused) v.pause(); }); return; }
     refs.current.forEach((v, i) => {
       if (!v) return;
       if (i === active) {
         if (!loaded.current.has(i)) { loaded.current.add(i); v.preload = 'auto'; v.load(); }
-        try { v.currentTime = 0; } catch {}
+        if (prevActive.current !== i) { try { v.currentTime = 0; } catch {} }   // 멈췄다 돌아온 경우는 이어서 재생
         v.play().catch(() => {});
       } else {
         if (i === nextIdx && !loaded.current.has(i)) { loaded.current.add(i); v.preload = 'auto'; v.load(); }
         if (!v.paused) v.pause();
       }
     });
-  }, [active, nextIdx]);
+    prevActive.current = active;
+  }, [active, nextIdx, live]);
 
   const cycle = videos.length * 5.5;
   return (
-    <div className="absolute inset-0">
+    <div ref={root} className="absolute inset-0">
       {/* CSS 전용 포스터 슬라이드쇼 (JS 없이도 분야 교차로 순환) */}
       {videos.map((v, i) => (
         <img key={v.poster} src={v.poster} alt="" className="hero-fade absolute inset-0 w-full h-full object-cover"

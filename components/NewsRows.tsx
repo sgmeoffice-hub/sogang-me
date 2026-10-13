@@ -6,9 +6,9 @@ import { t, T, type Locale } from '@/lib/i18n';
 import { coverFor } from '@/lib/placeholder';
 import { youtubeThumb } from '@/lib/html';
 
-function Arrow({ dir, onClick, disabled }: { dir: 'l' | 'r'; onClick: () => void; disabled: boolean }) {
+function Arrow({ dir, onClick, disabled, locale }: { dir: 'l' | 'r'; onClick: () => void; disabled: boolean; locale: Locale }) {
   return (
-    <button onClick={onClick} disabled={disabled} aria-label={dir === 'l' ? 'previous' : 'next'}
+    <button onClick={onClick} disabled={disabled} aria-label={T(locale, dir === 'l' ? 'prev' : 'next')}
       className="w-11 h-11 grid place-items-center border border-sg-line bg-white text-sg-ink hover:bg-sg-cardinal hover:border-sg-cardinal hover:text-white disabled:opacity-30 disabled:hover:bg-white disabled:hover:text-sg-ink transition-colors">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">{dir === 'l' ? <path d="M15 5l-7 7 7 7" /> : <path d="M9 5l7 7-7 7" />}</svg>
     </button>
@@ -40,7 +40,7 @@ function NoticeList({ locale, board, posts }: { locale: Locale; board: 'notice' 
           {posts.slice(0, 8).map((p) => (
             <li key={p.id} className="border-b border-sg-mist last:border-0">
               <Link href={`/${locale}/board/${board}/${p.id}`} className="group flex items-center gap-3 px-3 md:px-4 py-[11px]">
-                {p.is_pinned && <span className="shrink-0 text-[11px] font-bold text-white bg-sg-cardinal px-1.5 py-0.5">{ko ? '중요' : 'PIN'}</span>}
+                {p.is_pinned && <span className="shrink-0 text-[11px] font-bold text-white bg-sg-cardinal px-1.5 py-0.5">{T(locale, 'pinned')}</span>}
                 <span className="flex-1 min-w-0 truncate text-[15px] font-medium text-sg-ink group-hover:text-sg-cardinal transition-colors">{t(p, 'title', locale)}</span>
                 <span className="shrink-0 text-[12.5px] text-sg-gray9 tabular-nums">{fmtDate(p.created_at)}</span>
               </Link>
@@ -70,7 +70,7 @@ function Row({ locale, board, posts, variant }: { locale: Locale; board: string;
         </div>
         <div className="flex items-center gap-2">
           <Link href={`/${locale}/board/${board}`} className="hidden sm:inline-flex items-center gap-1 mr-2 text-[14px] font-semibold text-sg-gray11 hover:text-sg-cardinal">{T(locale, 'more')} <span aria-hidden>+</span></Link>
-          <Arrow dir="l" onClick={() => step(-1)} disabled={pos.start} /><Arrow dir="r" onClick={() => step(1)} disabled={pos.end} />
+          <Arrow dir="l" onClick={() => step(-1)} disabled={pos.start} locale={locale} /><Arrow dir="r" onClick={() => step(1)} disabled={pos.end} locale={locale} />
         </div>
       </div>
       {posts.length === 0 ? <p className="py-10 text-center text-sg-gray9 border border-dashed border-sg-line">{T(locale, 'noPosts')}</p> : (
@@ -86,7 +86,7 @@ function Row({ locale, board, posts, variant }: { locale: Locale; board: string;
                   <div className="h-2 bg-sg-cardinal group-hover:bg-sg-deep" />
                 )}
                 <div className="p-5 md:p-6 flex flex-col flex-1">
-                  {p.is_pinned && <span className="self-start mb-2 text-[11px] font-bold text-white bg-sg-cardinal px-2 py-0.5">{ko ? '중요' : 'PINNED'}</span>}
+                  {p.is_pinned && <span className="self-start mb-2 text-[11px] font-bold text-white bg-sg-cardinal px-2 py-0.5">{T(locale, 'pinned')}</span>}
                   <h4 className={`font-bold leading-snug group-hover:text-sg-cardinal transition-colors ${variant === 'text' ? 'text-[17px] line-clamp-3' : 'text-[16px] line-clamp-2'}`}>{t(p, 'title', locale)}</h4>
                   {variant === 'text' && t(p, 'excerpt', locale) && <p className="mt-3 text-[14px] leading-relaxed text-sg-gray11 line-clamp-3">{t(p, 'excerpt', locale)}</p>}
                   {variant === 'image' && t(p, 'excerpt', locale) && <p className="mt-2 text-[13.5px] leading-relaxed text-sg-gray11 line-clamp-2">{t(p, 'excerpt', locale)}</p>}

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { nav } from './nav';
-import { T, type Locale } from './i18n';
+import { T, isLocale, type Locale } from './i18n';
 
 /**
  * 검색엔진용 페이지 정보. 국문·영문 페이지가 각자 자기 언어의 제목·설명을 갖고, 서로를 짝(hreflang)으로 가리킨다.
@@ -14,8 +14,11 @@ export function navLabel(l: Locale, href: string): string | undefined {
   return undefined;
 }
 
-/** 페이지 메타데이터 — 제목(뒤에 사이트 이름이 붙음)·설명·자기 주소(canonical)·국문/영문 짝 주소·공유 미리보기 */
-export function pageMeta(l: Locale, path: string, opts: { title?: string; description?: string } = {}): Metadata {
+/** 페이지 메타데이터 — 제목(뒤에 사이트 이름이 붙음)·설명·자기 주소(canonical)·국문/영문 짝 주소·공유 미리보기.
+ *  locale은 검증하지 않은 주소 조각이 그대로 올 수 있다(/x.y/about/intro — 점이 든 경로는 미들웨어가 건너뛴다). 모르는 값은 국문으로 받아
+ *  여기서 500이 나지 않게 하고, 404는 레이아웃의 notFound()에 맡긴다(오류 응답은 캐시되지 않아 탐색 봇이 올 때마다 함수 호출이 든다, 2026-10-13). */
+export function pageMeta(locale: Locale | string, path: string, opts: { title?: string; description?: string } = {}): Metadata {
+  const l: Locale = isLocale(locale) ? locale : 'ko';
   const p = bare(path);
   const description = opts.description || T(l, 'siteDesc');
   return {

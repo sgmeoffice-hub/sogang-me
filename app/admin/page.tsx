@@ -1,6 +1,5 @@
-import Link from 'next/link';
-import { createClient } from '@/lib/supabase-server';
-import { adminBase } from '@/lib/admin';
+import Link from '@/components/Link';
+import { adminBase, requireAdmin } from '@/lib/admin';
 import { boards } from '@/lib/nav';
 import { ui } from '@/lib/i18n';
 import { r2Enabled } from '@/lib/r2';
@@ -8,7 +7,8 @@ import { getBackupStatus } from '@/lib/backup';
 import { serviceClient } from '@/lib/vault';
 
 export default async function Dashboard() {
-  const sb = await createClient(); const b = adminBase();
+  const auth = await requireAdmin(); if (!auth) return null;   // 아래 BackupAlert가 service-role 클라이언트를 쓰므로 페이지 자체에서도 검사
+  const { sb } = auth; const b = adminBase();
   const counts = await Promise.all(boards.map(async (bd) => { const { count } = await sb.from('posts').select('id', { count: 'exact', head: true }).eq('board', bd); return [bd, count || 0] as const; }));
   const { count: pending } = await sb.from('reservations').select('id', { count: 'exact', head: true }).eq('status', 'pending');
   const { count: fac } = await sb.from('faculty').select('id', { count: 'exact', head: true });

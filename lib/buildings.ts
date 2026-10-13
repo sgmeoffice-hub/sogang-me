@@ -6,7 +6,7 @@
 export type Building = { code: string; ko: string; en: string };
 export const buildings: Building[] = [
   { code: 'AS', ko: '아담샬관', en: 'Adam Schall Hall' },
-  { code: 'R', ko: '리치과학관', en: 'New Ricci Hall' },
+  { code: 'R', ko: '리치과학관', en: 'Ricci Hall' },
   { code: 'RA', ko: '리치별관', en: 'Ricci Annex' },
   { code: 'TE', ko: '떼이야르관', en: 'Teilhard Hall' },
   { code: 'K', ko: '김대건관', en: 'Kim Daegon Hall' },

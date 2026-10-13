@@ -8,7 +8,8 @@ export const TIME_SLOTS: string[] = Array.from({ length: (24 - 6) * 2 }, (_, i) 
 /** 시작은 마지막 슬롯(23:30) 제외, 종료는 첫 슬롯 제외 + 자정(24:00) 허용 — 짝이 없는 경계값을 폼에서 아예 고를 수 없게. */
 export const START_SLOTS = TIME_SLOTS.slice(0, -1);
 export const END_SLOTS = [...TIME_SLOTS.slice(1), '24:00'];
-export const isHalfHour = (t: string) => /^\d{2}:(00|30)(:00)?$/.test(t);
+/** 운영 시간(06:00~23:30, 종료는 24:00까지) 안의 30분 단위만 — '25:00'·'00:00' 같은 값이 통과하던 문제(2026-10-13). 관리자 수정의 '(기존)' 시각은 readResv의 kept()가 따로 허용. */
+export const isHalfHour = (t: string) => /^(?:(?:0[6-9]|1\d|2[0-3]):(?:00|30)|24:00)(?::00)?$/.test(t);
 export const isDateStr = (s: string | null | undefined) => /^\d{4}-\d{2}-\d{2}$/.test(s || '');
 
 export const kstToday = () => new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);

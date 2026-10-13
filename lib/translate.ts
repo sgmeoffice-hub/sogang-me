@@ -99,9 +99,10 @@ async function freeHtml(html: string): Promise<string> {
   return polishEnglish(parts.map((p) => (typeof p === 'string' ? p : renderUnit(p, tr[k++]))).join(''));
 }
 
-async function viaClaude(fields: Record<string, string>, names: NameRow[]): Promise<Record<string, string> | null> {
+async function viaClaude(fields: Record<string, string>, names: NameRow[], all: NameRow[]): Promise<Record<string, string> | null> {
   const { default: Anthropic } = await import('@anthropic-ai/sdk');
-  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  // Hobby 함수 제한(실행 시간) 안에서 실패하도록 짧은 타임아웃·재시도 1회(2026-10-13)
+  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, timeout: 50_000, maxRetries: 1 });
   const res = await client.messages.create({
     model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-5',
     max_tokens: 16000,
@@ -112,7 +113,7 @@ async function viaClaude(fields: Record<string, string>, names: NameRow[]): Prom
   const text = res.content.map((c: any) => (c.type === 'text' ? c.text : '')).join('').replace(/```json|```/g, '').trim();
   try {
     const parsed = JSON.parse(text);
-    for (const k of Object.keys(parsed)) if (typeof parsed[k] === 'string') parsed[k] = enforceNames(names, polishEnglish(parsed[k]));
+    for (const k of Object.keys(parsed)) if (typeof parsed[k] === 'string') parsed[k] = enforceNames(names, polishEnglish(parsed[k]), all);
     return parsed;
   } catch { return null; }
 }
@@ -136,12 +137,20 @@ export async function translateLongContent(html: string, chunkSize = 9000): Prom
 export async function translateKoToEn(fields: Record<string, string>): Promise<Record<string, string> | null> {
   const entries = Object.entries(fields).filter(([, v]) => v && v.trim());
   if (!entries.length) return {};
-  // 원문에 등장하는 교수(이름·연구실)만 용어집으로 — 두 경로(Claude/무료) 모두 후처리로도 한 번 더 맞춘다
-  const names = namesIn(await facultyNames(), entries.map(([, v]) => v).join('\n'));
+  // 원문에 등장하는 교수(이름·연구실)만 용어집으로 — 두 경로(Claude/무료) 모두 후처리로도 한 번 더 맞춘다.
+  // 교수진 전체(all)도 넘겨 후처리가 다른 교수의 공식 표기를 건드리지 않게 한다(lib/names-core enforceNames)
+  // facultyNames는 사본이 없으면 던진다(#12) — 여기서 받아 null로: 용어집 없이 번역해 번역기식 로마자 이름이 저장되는 것과,
+  // savePost 등이 저장 전에 중단되는 것(#42)을 모두 막는다. 호출하는 쪽은 '영문 없이 저장, 나중에 자동 재시도'(2026-10-13)
+  let all: NameRow[];
+  try { all = await facultyNames(); }
+  catch (e: any) { console.error('translate: facultyNames failed', e?.message); return null; }
+  const names = namesIn(all, entries.map(([, v]) => v).join('\n'));
   if (process.env.ANTHROPIC_API_KEY) {
     // 키가 설정돼 있으면 Claude 실패를 무료 번역기로 조용히 대체하지 않는다 —
     // 품질이 다른 결과가 검수 완료(en_verified)처럼 저장되는 것을 막고, 실패는 실패로 보고한다.
-    return await viaClaude(Object.fromEntries(entries), names);
+    // SDK·네트워크 오류도 던지지 않고 null로 — 호출하는 쪽(savePost 등)이 '영문 없이 저장, 나중에 자동 재시도'로 처리하도록(2026-10-13)
+    try { return await viaClaude(Object.fromEntries(entries), names, all); }
+    catch (e: any) { console.error('translate (claude) failed', e?.status ?? e?.name, e?.message); return null; }
   }
   try {
     const out: Record<string, string> = {};
@@ -150,9 +159,9 @@ export async function translateKoToEn(fields: Record<string, string>): Promise<R
     const plain = entries.filter(([, v]) => !/<[a-z][^>]*>/i.test(v));
     if (plain.length) {
       const tr = await freeBatch(plain.map(([, v]) => preKo(v.replace(/\s+/g, ' ').trim())));
-      plain.forEach(([k], i) => { out[k] = enforceNames(names, polishEnglish(tr[i])); });
+      plain.forEach(([k], i) => { out[k] = enforceNames(names, polishEnglish(tr[i]), all); });
     }
-    for (const [k, v] of html) out[k] = enforceNames(names, await freeHtml(v));
+    for (const [k, v] of html) out[k] = enforceNames(names, await freeHtml(v), all);
     return out;
   } catch (e: any) { console.error('translate failed', e?.message); return null; }
 }

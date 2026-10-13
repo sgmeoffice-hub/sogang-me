@@ -10,7 +10,7 @@ export const undergraduate: Record<string, PageContent> = {
     en: `<p>Detailed undergraduate admission information is available on the Sogang University Office of Admissions website.</p>
 <p><a href="https://admission.sogang.ac.kr" target="_blank" rel="noreferrer" class="btn-primary !no-underline !text-white">Office of Admissions →</a></p>
 <h2>International applicants</h2>
-<p>International students apply through the Office of Admissions (international track). For questions about the mechanical engineering program, contact the department office at <a href="mailto:me@sogang.ac.kr">the department office</a> or +82-2-705-8631.</p>`,
+<p>International students apply through the Office of Admissions (international track). For questions about the mechanical engineering program, contact the department office at <a href="mailto:mechadmin@sogang.ac.kr">mechadmin@sogang.ac.kr</a> or +82-2-705-8631.</p>`,
   },
   'undergraduate/curriculum': {
     ko: `<p class="text-sg-steel">2026년 입학생 기준 교과과정입니다. 각 학번별 교과과정은 세인트(SAINT)의 졸업메뉴 또는 서강대학교 요람에서 확인 가능합니다.</p>
@@ -81,6 +81,7 @@ export const undergraduate: Record<string, PageContent> = {
 <li>* Science-track students (except SCIENCE-based Liberal Major) must take Calculus I in area ④ "Humans, Science &amp; AI" as a required elective.</li>
 <li>** Up to 6 credits from other majors in the College of Engineering or College of Software Convergence count as ME electives (intensive major only).</li>
 <li>*** Multiple-major students whose primary major is not ME must take Calculus I and II as prerequisites.</li>
+<li>※ Liberal Major students who choose ME as their primary major follow the multiple-major (primary: ME) requirements in principle, but may opt for the intensive track if they wish.</li>
 </ul>
 <h2>2. Course requirements</h2>
 <h3>Major prerequisites (required; not counted toward major credits)</h3>
@@ -90,10 +91,11 @@ export const undergraduate: Record<string, PageContent> = {
 <tr><td>MEE1006 Intro to Intelligent Mechanical Design &amp; Manufacturing, MEE2006 Engineering Math I, MEE2007 Engineering Math II</td><td>9</td></tr>
 <tr><td rowspan="2">Multiple (primary: ME)</td><td>PHY1001, PHY1002, PHY1101, STS2006, one of BIO1001 General Biology I / CHM1001</td><td>13</td><td rowspan="2">Total 22</td></tr>
 <tr><td>MEE1006, MEE2006, MEE2007</td><td>9</td></tr>
-<tr><td rowspan="3">Multiple (primary: other)</td><td>STS2005 Calculus I, STS2006 Calculus II</td><td>6</td><td></td></tr>
-<tr><td>PHY1001, PHY1002, PHY1101, one of BIO1001 / CHM1001</td><td>10</td><td rowspan="2">Total 22 · MAT2410/2420 Applied Math I, II accepted as substitutes</td></tr>
+<tr><td rowspan="3">Multiple (primary: other)</td><td>STS2005 Calculus I, STS2006 Calculus II</td><td>6</td><td>Additional requirement from the 2006 cohort onward</td></tr>
+<tr><td>PHY1001, PHY1002, PHY1101, one of BIO1001 / CHM1001</td><td>10</td><td rowspan="2">Total 22 · MAT2410/2420 Applied Math I, II accepted as substitutes (Advanced Engineering Math I, II and Chemical Engineering Math I, II within the College of Engineering are mutually recognized)</td></tr>
 <tr><td>MEE2006, MEE2007</td><td>6</td></tr>
 </tbody></table>
+<p class="text-[13.5px] text-sg-steel">※ Substitutions for SCIENCE-based Liberal Major required courses: SCI1011 Scientific Mathematics → STS2006 Calculus II / SCI1012 Integrated Physics → PHY1001 General Physics I / SCI1013 Integrated Chemistry → CHM1001 General Chemistry I / SCI1014 Integrated Biology → BIO1001 General Biology I</p>
 <h3>Required major courses</h3>
 <table><thead><tr><th>Track</th><th>Courses</th><th>Credits</th><th>Note</th></tr></thead><tbody>
 <tr><td rowspan="2">Intensive</td><td>MEE2011 Solid Mechanics, MEE2012 Fluid Mechanics I, MEE2013 Dynamics, MEE2022 Thermodynamics I, MEE2025 Machine Shop Practice, MEE3004 Manufacturing Processes, MEE3015 Design Methodology (Capstone), MEE3025 ME Laboratory I, MEE4021 Creative Integrated Design (Capstone)</td><td>27</td><td rowspan="2">Up to 3 credits from MEE2014 / MEE3013 / MEE3032 count as required; any excess counts as elective</td></tr>
@@ -105,12 +107,12 @@ export const undergraduate: Record<string, PageContent> = {
 <ul>
 <li>MEE4046 (Special Research) counts toward graduation but not toward major credits.</li>
 <li>All first-year students must take COR1028 Albatross Seminar (ME section) in their first semester.</li>
-<li>MEE3301/3302 Research Project I/II count up to 3 credits toward the major.</li>
+<li>MEE3301/3302 Research Project I/II count up to 3 credits toward the major (if both are taken, the first counts as 3 major credits and the second as 3 general credits; students who earned 6 credits by Fall 2022 may count up to 6 as major credits).</li>
 <li>When switching from intensive to multiple major, MEE1006 counts as a free elective.</li>
 </ul>
 <h2>3. Roadmap (intensive track)</h2>
 <table><thead><tr><th>Area</th><th>Year 1</th><th>Year 2</th><th>Year 3</th><th>Year 4</th></tr></thead><tbody>
-<tr><th>General</th><td colspan="4">Core humanities, Science Writing, Albatross Seminar, Calculus I, Basic AI Programming, global language and humanities electives</td></tr>
+<tr><th>General</th><td colspan="4">Core humanities, Science Writing, Albatross Seminar, Calculus I, Basic AI Programming, one Global Language elective, one elective each from ① Humans &amp; Faith, ② Humans &amp; Thought, ③ Humans &amp; Society</td></tr>
 <tr><th>Prerequisites</th><td>Calculus II, General Physics I·II &amp; Labs, General Chemistry I, Intro to Intelligent Mechanical Design &amp; Manufacturing</td><td>Engineering Math I, II</td><td></td><td></td></tr>
 <tr><th>ME General</th><td></td><td></td><td>ME Lab I, Math for Machine Learning, ME Analysis, Research Project I</td><td>Creative Integrated Design, Automotive Engineering, ME Seminar, Research Project II</td></tr>
 <tr><th>Design &amp; Materials</th><td></td><td>Solid Mechanics, Product Design Basics</td><td>Materials Behavior, Component Design, Finite Element Analysis, Design Methodology</td><td>Optimal Design, Biomechanics, Continuum Mechanics, DOE &amp; Statistics, Acoustics, Applied FEA, Materials Modeling &amp; Fatigue</td></tr>

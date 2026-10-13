@@ -26,16 +26,20 @@ export default function Header({ locale }: { locale: Locale }) {
   const [mega, setMega] = useState(false);
   const [mobile, setMobile] = useState<string | null>(null);
   const [scrolled, setScrolled] = useState(false);
-  const other: Locale = locale === 'ko' ? 'en' : 'ko';
+  const ko = locale === 'ko';
+  const other: Locale = ko ? 'en' : 'ko';
   // ?setlang=1: 미들웨어가 이 표시가 있을 때만 언어 선택을 쿠키로 기억한다.
   // 클릭 시점에 현재 쿼리(페이지·검색어 등)를 보존해 언어를 바꿔도 보던 목록이 유지되게 한다.
   // (useSearchParams는 SSG 페이지에서 Suspense 경계를 요구하므로 쓰지 않는다)
   const switchHref = pathname.replace(/^\/(ko|en)/, `/${other}`) + '?setlang=1';
-  const switchLang = (e: React.MouseEvent) => {
-    e.preventDefault();
+  const switchLang = (e: React.MouseEvent<HTMLAnchorElement>) => {
     const q = new URLSearchParams(window.location.search);
     q.set('setlang', '1');
-    window.location.href = pathname.replace(/^\/(ko|en)/, `/${other}`) + `?${q.toString()}`;
+    const href = pathname.replace(/^\/(ko|en)/, `/${other}`) + `?${q.toString()}`;
+    // Ctrl/Cmd/Shift/Alt 클릭은 브라우저 기본 동작(새 탭·창)에 맡긴다 — href만 현재 쿼리를 담은 주소로 바꿔 둔다 (2026-10-13)
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) { e.currentTarget.href = href; return; }
+    e.preventDefault();
+    window.location.href = href;
   };
   useEffect(() => { const f = () => setScrolled(window.scrollY > 10); f(); window.addEventListener('scroll', f, { passive: true }); return () => window.removeEventListener('scroll', f); }, []);
   useEffect(() => { setOpen(false); setMega(false); }, [pathname]);
@@ -47,7 +51,7 @@ export default function Header({ locale }: { locale: Locale }) {
         <Logo locale={locale} />
         {/* 전체 메뉴는 1280px 이상에서만: 1024~1365px에서 메뉴가 넘쳐 오른쪽 BK21·언어 전환 버튼이 화면 밖으로 잘리던 문제(2026-09-25 전체 점검).
             1280~1439px은 메뉴 간격을 줄이고, 그보다 좁으면 햄버거 메뉴 */}
-        <nav className="hidden xl:flex items-center h-full" aria-label="Main" onMouseEnter={() => setMega(true)}>
+        <nav className="hidden xl:flex items-center h-full" aria-label={ko ? '주 메뉴' : 'Main'} onMouseEnter={() => setMega(true)}>
           {nav.map((item) => (
             <Link key={item.id} href={`/${locale}${item.href}`} className="relative px-3 min-[1440px]:px-[18px] h-full flex items-center text-[16.5px] font-semibold text-sg-ink hover:text-sg-cardinal after:absolute after:left-3 after:right-3 min-[1440px]:after:left-[18px] min-[1440px]:after:right-[18px] after:bottom-0 after:h-[3px] after:bg-sg-cardinal after:scale-x-0 after:origin-left after:transition-transform hover:after:scale-x-100">
               {label(item, locale)}
@@ -56,7 +60,7 @@ export default function Header({ locale }: { locale: Locale }) {
         </nav>
         <div className="flex items-center gap-2">
           {/* 옛 홈페이지 상단바에 있던 BK21 바로가기 — 공식 로고 원색, 버튼 틀은 언어 버튼과 동일 (모바일은 대학원과정 메뉴에서) */}
-          <a href="http://bk21me.sogang.ac.kr" target="_blank" rel="noreferrer" title="BK21 교육연구팀 (BK21 FOUR)"
+          <a href="http://bk21me.sogang.ac.kr" target="_blank" rel="noreferrer" title={ko ? 'BK21 교육연구팀 (BK21 FOUR)' : 'BK21 FOUR Education & Research Team'}
             className="hidden md:flex items-center px-3 py-2 border border-sg-line hover:border-sg-ink">
             <img src="/images/brand/bk21-four.png" alt="BK21 FOUR" width={44} height={20} style={{ width: 44, height: 20, maxWidth: 'none' }} />
           </a>
@@ -65,7 +69,7 @@ export default function Header({ locale }: { locale: Locale }) {
           <a href={switchHref} onClick={switchLang} className="flex items-center gap-2 px-3 py-2 border border-sg-line text-[13px] font-semibold text-sg-ink hover:border-sg-ink" aria-label={other === 'en' ? 'Switch to English' : '한국어로 전환'}>
             <Flag code={other} /> {other === 'en' ? 'ENG' : '한국어'}
           </a>
-          <button onClick={() => setOpen(!open)} className="xl:hidden p-2 text-sg-ink" aria-label="Menu" aria-expanded={open}>
+          <button onClick={() => setOpen(!open)} className="xl:hidden p-2 text-sg-ink" aria-label={ko ? '메뉴' : 'Menu'} aria-expanded={open}>
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">{open ? <path d="M6 6l12 12M18 6L6 18" /> : <path d="M3 7h18M3 12h18M3 17h18" />}</svg>
           </button>
         </div>

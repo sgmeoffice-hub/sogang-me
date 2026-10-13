@@ -19,7 +19,7 @@ const MONTHLY_KEEP = 12;
 export type BackupStatus = {
   at: string; ok: boolean; error?: string; trigger?: string;
   key?: string; bytes?: number; unchanged?: boolean; counts?: Record<string, number>;
-  mediaCopied?: number; legacyCopied?: number; legacyTotal?: number; legacyAfter?: string; legacyDone?: boolean; legacyFailed?: string[]; stage?: string; purged?: { trash: number; history: number };
+  mediaCopied?: number; mediaTotal?: number; legacyCopied?: number; legacyTotal?: number; legacyAfter?: string; legacyDone?: boolean; legacyFailed?: string[]; stage?: string; purged?: { trash: number; history: number };
   lastSuccessAt?: string; hash?: string;
 };
 
@@ -44,15 +44,19 @@ async function writeStatus(sb: SupabaseClient, s: BackupStatus) {
 }
 export const getBackupStatus = readStatus;
 
-/** Supabase 'media' 저장소 전체 경로 */
+/** Supabase 'media' 저장소 전체 경로. 1,000개씩 이어서 읽고(dumpTable과 같은 방식 — 한 폴더가 1,000개를 넘으면 최신 파일이 빠지던 문제),
+ *  목록 조회 오류는 삼키지 않고 던진다(0건 복사를 정상 실행으로 기록하지 않게, 2026-10-13) */
 async function listMedia(sb: SupabaseClient, prefix = ''): Promise<string[]> {
   const out: string[] = [];
-  const { data } = await sb.storage.from('media').list(prefix, { limit: 1000 });
-  for (const o of data || []) {
-    const p = prefix ? `${prefix}/${o.name}` : o.name;
-    if ((o as any).id) out.push(p); else out.push(...(await listMedia(sb, p)));
+  for (let offset = 0; ; offset += 1000) {
+    const { data, error } = await sb.storage.from('media').list(prefix, { limit: 1000, offset });
+    if (error) throw new Error(`media 목록(${prefix || '/'}): ${error.message}`);
+    for (const o of data || []) {
+      const p = prefix ? `${prefix}/${o.name}` : o.name;
+      if ((o as any).id) out.push(p); else out.push(...(await listMedia(sb, p)));
+    }
+    if ((data || []).length < 1000) return out;
   }
-  return out;
 }
 
 export async function runBackup(sb: SupabaseClient, trigger = 'cron', budgetMs = 200_000): Promise<BackupStatus> {
@@ -71,7 +75,9 @@ export async function runBackup(sb: SupabaseClient, trigger = 'cron', budgetMs =
     const tables: Record<string, any[]> = {}; const counts: Record<string, number> = {};
     for (const t of TABLES) { tables[t] = await dumpTable(sb, t); counts[t] = tables[t].length; }
     const body = JSON.stringify({ site: 'me.sogang.ac.kr', createdAt: status.at, tables });
-    const hash = createHash('sha256').update(JSON.stringify({ ...tables, site_settings: tables.site_settings.filter((r: any) => r.key !== 'backup') })).digest('hex');   // 백업 상태 행은 매번 바뀌므로 비교에서 뺀다
+    // 비교용 해시에서 매번 바뀌는 값은 뺀다: 백업 상태 행, 게시글 조회수(view_count — 매일 늘어나 '전날과 같음'이 한 번도 안 걸리던 문제, 2026-10-13).
+    // 저장 본문(body)에는 그대로 들어가므로 조회수는 마지막으로 저장된 날 기준이 된다.
+    const hash = createHash('sha256').update(JSON.stringify({ ...tables, posts: tables.posts.map(({ view_count, ...r }: any) => r), site_settings: tables.site_settings.filter((r: any) => r.key !== 'backup') })).digest('hex');
     const gz = gzipSync(body);
     const needMonthly = (await r2List(`db/monthly/${month}`)).length === 0;
     status.counts = counts; status.bytes = gz.length;
@@ -93,7 +99,9 @@ export async function runBackup(sb: SupabaseClient, trigger = 'cron', budgetMs =
     // 3) 관리자가 올린 파일 — 백업에 없는 것만 추가(지워진 파일도 백업에는 남겨 둔다)
     const have = new Set((await r2List('files/media/')).map((o) => o.key));
     let mediaCopied = 0;
-    for (const p of await listMedia(sb)) {
+    const media = await listMedia(sb);
+    status.mediaTotal = media.length;   // 관리자 화면에서 '본 파일 수'를 확인할 수 있게
+    for (const p of media) {
       if (left() < 30_000) break;
       const key = `files/media/${p}`; if (have.has(key)) continue;
       const { data } = await sb.storage.from('media').download(p);

@@ -18,9 +18,9 @@ export default function ReservationCalendar({ y, m, rows, ko, title, prevHref, n
   return (
     <div className="border border-sg-line bg-white">
       <div className="flex items-center justify-between px-4 py-3 bg-sg-ink text-white">
-        <Link href={prevHref} className="font-mono px-2 hover:text-sg-red" aria-label="prev">‹</Link>
+        <Link href={prevHref} className="font-mono px-2 hover:text-sg-red" aria-label={ko ? '이전 달' : 'Previous month'}>‹</Link>
         <p className="font-semibold">{title}</p>
-        <Link href={nextHref} className="font-mono px-2 hover:text-sg-red" aria-label="next">›</Link>
+        <Link href={nextHref} className="font-mono px-2 hover:text-sg-red" aria-label={ko ? '다음 달' : 'Next month'}>›</Link>
       </div>
       <div className="grid grid-cols-7 bg-sg-mist border-b border-sg-line">{dow.map((d, i) => <div key={d} className={`py-2 text-center font-mono text-[11px] tracking-wider ${i === 0 ? 'text-sg-red' : i === 6 ? 'text-blue-700' : 'text-sg-steel'}`}>{d}</div>)}</div>
       <div className="grid grid-cols-7 auto-rows-[minmax(88px,auto)]">

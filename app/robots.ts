@@ -8,7 +8,8 @@ export default function robots(): MetadataRoute.Robots {
   // '/*?': 물음표가 붙은 주소(게시판 쪽 번호·검색, 예약 달력 월 이동, 교수진 분야 필터, 언어 전환)는 요청마다 서버가 새로 그리는
   // 동적 페이지이고 예약 달력은 끝없이 이어지므로 크롤러가 긁지 않게 막는다. 게시글은 사이트맵으로 수집되어 검색 노출에는 영향 없음.
   // '/_next/'는 ?dpl=이 붙는 스크립트라 구글 렌더링용으로 허용(더 긴 규칙이 우선). (2026-10-12, Vercel 무료 한도 대비)
-  const disallow = ['/admin', `/${process.env.ADMIN_PATH || 'adm'}`, '/api', '/*?'];
+  // 관리자 실제 주소(ADMIN_PATH)는 적지 않는다 — robots.txt에 쓰면 경로를 공개하는 셈. 관리자 레이아웃의 noindex 메타가 색인을 막는다(2026-10-13)
+  const disallow = ['/admin', '/api', '/*?'];
   return {
     rules: [
       { userAgent: '*', allow: ['/', '/_next/'], disallow },

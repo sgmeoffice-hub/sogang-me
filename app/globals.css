@@ -69,6 +69,8 @@ body { @apply bg-sg-paper text-sg-ink font-sans antialiased; word-break: keep-al
 /* Reveal on scroll */
 .reveal { opacity: 0; transform: translateY(22px); transition: opacity .8s cubic-bezier(.2,.7,.2,1), transform .8s cubic-bezier(.2,.7,.2,1); }
 .reveal.in { opacity: 1; transform: none; }
+/* 인쇄·JS 없음·움직임 줄이기에서는 바로 보인다 — 관찰자가 돌지 않으면 opacity:0으로 남아 인쇄물·JS 실패 화면이 비어 있던 문제(2026-10-13) */
+@media print, (scripting: none), (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } }
 @keyframes rise { from { opacity: 0; transform: translateY(26px);} to { opacity: 1; transform: none;} }
 .rise { animation: rise 1s cubic-bezier(.2,.7,.2,1) both; }
 .rise-1 { animation-delay: .15s } .rise-2 { animation-delay: .35s } .rise-3 { animation-delay: .55s } .rise-4 { animation-delay: .75s }
@@ -82,6 +84,7 @@ body { @apply bg-sg-paper text-sg-ink font-sans antialiased; word-break: keep-al
    12장 기준 창 8.3%: 0~8% 표시, 12%까지 페이드아웃, 95%부터 페이드인 */
 @keyframes heroFade { 0% { opacity: 1 } 8% { opacity: 1 } 13% { opacity: 0 } 94% { opacity: 0 } 100% { opacity: 1 } }
 .hero-fade { opacity: 0; animation: heroFade 66s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .hero-fade { animation: none; opacity: 1; } }   /* 움직임 줄이기: 영상도 안 띄우므로(HeroRotator) 포스터 한 장으로 정지 */
 
 /* 관리자 리치 에디터 */
 .ProseMirror { outline: none; }

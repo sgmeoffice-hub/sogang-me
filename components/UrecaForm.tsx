@@ -4,6 +4,19 @@ import { urecaTerms } from '@/lib/nav';
 import type { Locale } from '@/lib/i18n';
 
 type Lab = { id: number; lab_ko: string; lab_en: string | null; name_ko: string; name_en: string | null };
+const MSG_MAX = 1000; // API(app/api/ureca)의 message slice 상한과 같게
+
+/** 서버의 오류 코드(app/api/ureca)를 보는 언어로 — 모르는 코드는 서버 문구를 그대로 쓴다 */
+function errorText(code: string | undefined, fallback: string | undefined, ko: boolean) {
+  const m: Record<string, [string, string]> = {
+    rate_limited: ['요청이 너무 잦습니다. 잠시 후 다시 시도해 주세요.', 'Too many requests. Please try again in a few minutes.'],
+    missing: ['필수 항목이 비어 있습니다.', 'Please fill in all required fields.'],
+    invalid: ['입력값이 올바르지 않습니다. 다시 확인해 주세요.', 'Some of the entered values are invalid. Please check and try again.'],
+    db: ['저장 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.', 'Could not save your application. Please try again later.'],
+  };
+  const pair = code && m[code];
+  return pair ? pair[ko ? 0 : 1] : fallback || (ko ? '오류가 발생했습니다. 다시 시도해 주세요.' : 'Something went wrong. Please try again.');
+}
 
 export default function UrecaForm({ locale, labs }: { locale: Locale; labs: Lab[] }) {
   const ko = locale === 'ko';
@@ -12,6 +25,7 @@ export default function UrecaForm({ locale, labs }: { locale: Locale; labs: Lab[
   const [msg, setMsg] = useState('');
   const [ranks, setRanks] = useState<Record<number, string>>({});
   const [replaced, setReplaced] = useState(false);
+  const [msgLen, setMsgLen] = useState(0);
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget); const row: any = Object.fromEntries(fd.entries());
@@ -19,9 +33,14 @@ export default function UrecaForm({ locale, labs }: { locale: Locale; labs: Lab[
     const rs = choices.map((c) => c.rank);
     if (!choices.length || new Set(rs).size !== rs.length) { setMsg(ko ? '지망 순위(1·2·3)를 중복 없이 지정해 주세요.' : 'Assign unique ranks 1–3 to your preferred labs.'); setState('error'); return; }
     setState('saving');
-    const r = await fetch('/api/ureca', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...row, choices }) });
-    const j = await r.json().catch(() => ({}));
-    if (!r.ok) { setMsg(j.error || 'error'); setState('error'); } else { setReplaced(!!j.replaced); setState('done'); }
+    try {
+      const r = await fetch('/api/ureca', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...row, choices }) });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) { setMsg(errorText(j.code, j.error, ko)); setState('error'); } else { setReplaced(!!j.replaced); setState('done'); }
+    } catch {
+      // 네트워크 오류·게이트웨이 시간 초과 — 버튼이 '…'에 갇히지 않게 상태를 되돌린다
+      setMsg(ko ? '네트워크 오류로 전송하지 못했습니다. 다시 시도해 주세요.' : 'Network error — please try again.'); setState('error');
+    }
   }
   if (state === 'done') return <div className="border-l-4 border-sg-cardinal bg-sg-mist p-6"><p className="font-bold text-[17px]">{ko ? (replaced ? '지원서가 수정되었습니다.' : 'URECA 인턴 지원서가 접수되었습니다.') : (replaced ? 'Your application has been updated.' : 'Your URECA application has been received.')}</p><p className="text-[14.5px] text-sg-gray11 mt-1">{ko ? (replaced ? '같은 학기에 이전에 제출하신 지원서는 이번 내용으로 대체되었습니다. 지망 순서대로 해당 교수님께서 선발 여부를 결정하며, 결과는 이메일로 안내드립니다.' : '지망 순서대로 해당 교수님께서 선발 여부를 결정하며, 결과는 이메일로 안내드립니다.') : 'Professors review applications in order of preference; results will be sent by email.'}</p></div>;
   return (
@@ -29,11 +48,12 @@ export default function UrecaForm({ locale, labs }: { locale: Locale; labs: Lab[
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="text-[13px]"><span className="eyebrow">{ko ? '지원 연도' : 'Year'}</span><select name="year" defaultValue={now.getFullYear()} className="input mt-1">{[now.getFullYear(), now.getFullYear() + 1].map((y) => <option key={y} value={y}>{y}</option>)}</select></label>
         <label className="text-[13px]"><span className="eyebrow">{ko ? '지원 기간 *' : 'Term *'}</span><select name="term" required className="input mt-1" defaultValue=""><option value="" disabled>{ko ? '선택하세요' : 'Select'}</option>{urecaTerms.map((t) => <option key={t.id} value={t.id}>{ko ? t.ko : t.en}</option>)}</select></label>
-        <label className="text-[13px]"><span className="eyebrow">{ko ? '이름 *' : 'Name *'}</span><input name="name" required className="input mt-1" /></label>
-        <label className="text-[13px]"><span className="eyebrow">{ko ? '학번 *' : 'Student ID *'}</span><input name="student_id" required className="input mt-1" /></label>
-        <label className="text-[13px]"><span className="eyebrow">{ko ? '현재 학기 *' : 'Current semester *'}</span><input name="semester" required className="input mt-1" placeholder={ko ? '예: 5학기' : 'e.g. 5th'} /></label>
-        <label className="text-[13px]"><span className="eyebrow">{ko ? '연락처 *' : 'Phone *'}</span><input name="phone" required className="input mt-1" placeholder="010-0000-0000" /></label>
-        <label className="text-[13px] sm:col-span-2"><span className="eyebrow">{ko ? '이메일 *' : 'Email *'}</span><input name="email" type="email" required className="input mt-1" /></label>
+        {/* maxLength는 API(app/api/ureca)의 slice 상한과 같게 — 서버가 말없이 자르던 것(긴 이메일은 무효가 됨)을 입력 단계에서 막는다 */}
+        <label className="text-[13px]"><span className="eyebrow">{ko ? '이름 *' : 'Name *'}</span><input name="name" required maxLength={60} className="input mt-1" /></label>
+        <label className="text-[13px]"><span className="eyebrow">{ko ? '학번 *' : 'Student ID *'}</span><input name="student_id" required maxLength={30} className="input mt-1" /></label>
+        <label className="text-[13px]"><span className="eyebrow">{ko ? '현재 학기 *' : 'Current semester *'}</span><input name="semester" required maxLength={30} className="input mt-1" placeholder={ko ? '예: 5학기' : 'e.g. 5th'} /></label>
+        <label className="text-[13px]"><span className="eyebrow">{ko ? '연락처 *' : 'Phone *'}</span><input name="phone" required maxLength={40} className="input mt-1" placeholder="010-0000-0000" /></label>
+        <label className="text-[13px] sm:col-span-2"><span className="eyebrow">{ko ? '이메일 *' : 'Email *'}</span><input name="email" type="email" required maxLength={120} className="input mt-1" /></label>
       </div>
       <div>
         <p className="eyebrow">{ko ? '지원 연구실 (지망 순서 1·2·3 선택) *' : 'Preferred labs (rank 1–3) *'}</p>
@@ -48,10 +68,10 @@ export default function UrecaForm({ locale, labs }: { locale: Locale; labs: Lab[
           ))}
         </div>
       </div>
-      <label className="block text-[13px]"><span className="eyebrow">{ko ? '지원 동기 / 하고 싶은 말' : 'Motivation / notes'}</span><textarea name="message" rows={4} className="input mt-1" /></label>
+      <label className="block text-[13px]"><span className="eyebrow">{ko ? '지원 동기 / 하고 싶은 말' : 'Motivation / notes'}</span><textarea name="message" rows={4} maxLength={MSG_MAX} onChange={(e) => setMsgLen(e.target.value.length)} className="input mt-1" /><span className="block text-right text-[12px] text-sg-gray9 tabular-nums">{msgLen} / {MSG_MAX}</span></label>
       <div className="flex items-center gap-4">
         <button disabled={state === 'saving'} className="btn-primary">{state === 'saving' ? '…' : ko ? 'URECA Intern 지원하기' : 'Apply for URECA Intern'}</button>
-        {state === 'error' && <p className="text-[13px] text-sg-cardinal">{msg}</p>}
+        {state === 'error' && <p className="text-[13px] text-sg-cardinal break-keep">{msg}</p>}
       </div>
       <p className="text-[12.5px] text-sg-gray9">{ko ? '※ 같은 학기에 다시 제출하면 마지막 제출본으로 자동 대체됩니다. 지원 내용을 바꾸고 싶으면 같은 학번으로 다시 제출해 주세요.' : '※ Submitting again for the same term replaces your previous application. To change your choices, simply submit again with the same student ID.'}</p>
       <p className="text-[12.5px] text-sg-gray9">{ko ? '제출된 정보는 URECA 선발 목적으로만 사용되며 학과사무실과 지망 연구실 교수에게 전달됩니다.' : 'Submitted information is used only for URECA selection and shared with the department office and the chosen professors.'}</p>

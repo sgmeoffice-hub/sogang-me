@@ -8,7 +8,8 @@ import { getHomeData, getLabCount } from '@/lib/data';
 import { T, t, isLocale, type Locale } from '@/lib/i18n';
 import { areas } from '@/content/areas';
 import { assets, heroFieldVideos } from '@/content/assets';
-import { youtubeThumb } from '@/lib/html';
+import { youtubeThumb, downloadUrl } from '@/lib/html';
+import { coverFor } from '@/lib/placeholder';
 import { pageMeta, siteJsonLd } from '@/lib/seo';
 
 export const revalidate = 3600; // 관리자 저장 시 즉시 갱신되므로 길게(10분 → 1시간, 2026-09-25 전송량 절감)
@@ -47,13 +48,13 @@ export default async function Home(props: { params: Promise<{ locale: Locale }> 
       {on('promo') && promo.length > 0 && (
         <section className="container-site -mt-14 relative z-10">
           <div className="grid gap-4 md:grid-cols-2">
-            {promo.map((p: any, i: number) => { const file = (p.attachments || [])[0]; return (
+            {promo.map((p: any, i: number) => { const file = (p.attachments || [])[0]; const cover = p.thumbnail_url || coverFor('research', t(p, 'title', l), p.id); return (
               <Reveal key={p.id} delay={i * 80} className="h-full">
                 <div className="card h-full flex overflow-hidden bg-white border-t-4 border-t-sg-cardinal shadow-[0_18px_40px_-16px_rgba(26,26,26,.28)]">
-                  {/* 표지는 비율이 제각각인 PDF 커버라 자르지 않고(contain) 통째로 보여주고, 빈 공간은 표지를 흐린 배경으로 채운다 */}
+                  {/* 표지는 비율이 제각각인 PDF 커버라 자르지 않고(contain) 통째로 보여주고, 빈 공간은 표지를 흐린 배경으로 채운다. 표지가 없으면 게시판 카드와 같은 자동 표지(coverFor) */}
                   <Link href={`/${l}/board/promo/${p.id}`} className="relative w-[34%] md:w-[36%] shrink-0 self-stretch overflow-hidden grid place-items-center p-2 md:p-3" style={{ backgroundColor: 'rgba(26,26,26,.9)' }}>
-                    <img src={p.thumbnail_url} alt="" aria-hidden className="absolute inset-0 w-full h-full object-cover blur-lg scale-125 opacity-50" />
-                    <img src={p.thumbnail_url} alt="" className="relative max-w-full max-h-[240px] md:max-h-[280px] object-contain shadow-[0_10px_28px_rgba(0,0,0,.45)]" />
+                    <img src={cover} alt="" aria-hidden className="absolute inset-0 w-full h-full object-cover blur-lg scale-125 opacity-50" />
+                    <img src={cover} alt="" className="relative max-w-full max-h-[240px] md:max-h-[280px] object-contain shadow-[0_10px_28px_rgba(0,0,0,.45)]" />
                   </Link>
                   <div className="p-4 md:p-6 flex flex-col min-w-0">
                     <p className="eyebrow">{ko ? '전공 홍보자료' : 'Intro materials'}</p>
@@ -61,7 +62,8 @@ export default async function Home(props: { params: Promise<{ locale: Locale }> 
                     <p className="mt-2 text-[13px] md:text-[13.5px] text-sg-gray11 leading-relaxed line-clamp-3 break-keep">{t(p, 'excerpt', l)}</p>
                     <div className="mt-auto pt-4 flex flex-wrap gap-2">
                       <Link href={`/${l}/board/promo/${p.id}`} className="btn-ghost !py-1.5 !px-3 !text-[13px]">{ko ? '자료 보기' : 'View'}</Link>
-                      {file && <a href={file.url} download className="btn-primary !py-1.5 !px-3 !text-[13px]">PDF ↓</a>}
+                      {/* downloadUrl: Supabase Storage 파일은 다른 출처라 download 속성이 무시된다 → ?download= 쿼리로 서버가 첨부로 내려 준다(PromoView와 동일) */}
+                      {file && <a href={downloadUrl(file.url, file.name)} download className="btn-primary !py-1.5 !px-3 !text-[13px]">PDF ↓</a>}
                     </div>
                   </div>
                 </div>
@@ -191,7 +193,7 @@ export default async function Home(props: { params: Promise<{ locale: Locale }> 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {gallery.slice(0, 8).map((g: any, i: number) => (
                 <Link key={g.id} href={`/${l}/board/gallery/${g.id}`} className={`group relative overflow-hidden bg-white/5 ${i === 0 ? 'col-span-2 row-span-2' : ''} aspect-square`}>
-                  <img src={g.thumbnail_url || g.images?.[0]?.url} alt="" loading="lazy" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                  <img src={g.thumbnail_url || g.images?.[0]?.url || coverFor('gallery', t(g, 'title', l), g.id)} alt="" loading="lazy" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                   <p className="absolute left-3 bottom-3 right-3 text-[13.5px] font-semibold opacity-0 group-hover:opacity-100 transition-opacity">{t(g, 'title', l)}</p>
                 </Link>

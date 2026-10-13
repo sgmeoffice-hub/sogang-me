@@ -1,4 +1,4 @@
-import { adminBase } from '@/lib/admin';
+import { adminBase, requireAdmin } from '@/lib/admin';
 import { ui } from '@/lib/i18n';
 import { r2Enabled } from '@/lib/r2';
 import { getBackupStatus, listBackups } from '@/lib/backup';
@@ -13,7 +13,9 @@ const kst = (iso?: string) => (iso ? new Date(Date.parse(iso) + 9 * 3600e3).toIS
 const mb = (n?: number) => (n ? `${(n / 1024 / 1024).toFixed(1)} MB` : '—');
 
 /** 백업·휴지통 (2026-09-25 책임자 요청). 복원(사이트 전체를 특정 날짜로)은 실수 위험 때문에 버튼으로 두지 않고 개발 작업으로 한다. */
-export default async function BackupPage() {
+export default async function BackupPage(props: { searchParams: Promise<{ limited?: string }> }) {
+  if (!(await requireAdmin())) return null;   // service-role로 휴지통·백업 키를 읽는 페이지 — 레이아웃 검사에만 의존하지 않는다
+  const { limited } = await props.searchParams;   // '지금 백업'이 10분 안에 다시 눌리면 실행하지 않고 ?limited=1로 돌아온다(actions.ts backupNow)
   const b = adminBase(); const svc = serviceClient();
   const [status, list, trash] = await Promise.all([getBackupStatus(svc), listBackups().catch(() => ({ daily: [], monthly: [] })), listTrash(svc).catch(() => [])]);
   const enabled = r2Enabled();
@@ -22,6 +24,7 @@ export default async function BackupPage() {
   return (
     <div className="max-w-4xl">
       <h1 className="text-2xl font-bold">백업·휴지통</h1>
+      {limited && <p className="mt-3 border-l-4 border-sg-cardinal px-4 py-2 text-[13px] font-semibold break-keep" style={{ backgroundColor: 'rgba(175,39,47,.06)' }}>방금 백업을 실행했습니다. 10분 뒤에 다시 눌러 주세요.</p>}
       <p className="mt-2 text-[13px] text-sg-steel break-keep">매일 새벽 4시에 DB 전체(게시글·교수·예약·URECA 등)와 업로드 파일을 Cloudflare R2 비공개 저장소에 자동 백업합니다. 최근 30일은 매일치, 그 이전은 매월 1일치를 12개월 보관합니다. 삭제한 글은 {TRASH_DAYS}일 동안 휴지통에 남고, 글을 고칠 때마다 직전 내용이 {HISTORY_DAYS}일 동안 보관됩니다(글 수정 화면 아래 ‘수정 이력’).</p>
 
       {!enabled && (

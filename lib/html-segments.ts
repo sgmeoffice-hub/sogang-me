@@ -74,13 +74,19 @@ function buildUnit(seg: string[]): Unit | null {
   return { pre: pre.join(''), text, map, suf: suf.join('') };
 }
 
+/** 태그 하나: 따옴표로 감싼 속성값 안의 '>'는 태그 끝으로 보지 않는다(title="a>b" 에서 태그가 잘리던 문제, 2026-10-13).
+ *  따옴표가 짝이 안 맞으면 예전처럼 첫 '>'에서 끝난다. */
+const TAG = `<(?:="[^"]*"|='[^']*'|[^>"']|["'])*>`;
+/** 분할 규칙: 주석, <style>·<script> 블록(통째로 원문 조각 — 옛 Word HTML의 CSS·JS 속 한글이 번역 단위가 되던 문제), 일반 태그 */
+const SPLIT = new RegExp(`(<!--[\\s\\S]*?-->|<style\\b(?:[^>"']|="[^"]*"|='[^']*'|["'])*>[\\s\\S]*?<\\/style\\s*>|<script\\b(?:[^>"']|="[^"]*"|='[^']*'|["'])*>[\\s\\S]*?<\\/script\\s*>|${TAG})`, 'i');
+
 /** 본문을 원문 조각(string)과 번역 단위(Unit)의 배열로 나눈다. */
 export function segmentHtml(html: string): (string | Unit)[] {
   const parts: (string | Unit)[] = []; let seg: string[] = [];
   const flush = () => { if (!seg.length) return; const u = buildUnit(seg); parts.push(u ?? seg.join('')); seg = []; };
-  for (const t of (html || '').split(/(<!--[\s\S]*?-->|<[^>]*>)/)) {
+  for (const t of (html || '').split(SPLIT)) {
     if (!t) continue;
-    if (t.startsWith('<!--')) { flush(); parts.push(t); continue; }
+    if (t.startsWith('<!--') || /^<(?:style|script)\b[\s\S]*<\/(?:style|script)\s*>$/i.test(t)) { flush(); parts.push(t); continue; }
     if (t.startsWith('<')) { const { name } = tagInfo(t); if (name && INLINE.has(name)) seg.push(t); else { flush(); parts.push(t); } }
     else seg.push(t);
   }

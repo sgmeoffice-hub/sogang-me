@@ -79,7 +79,7 @@ export default function RichEditor({ name, defaultValue = '', folder = 'posts', 
     input.onchange = async () => {
       const files = Array.from(input.files || []); if (!files.length) return;
       setBusy(true);
-      try { for (const f of files) { const up = await uploadToMedia(f, folder); editor?.chain().focus().setImage({ src: up.url }).run(); } }
+      try { for (const f of files) { const up = await uploadToMedia(f, folder, true); editor?.chain().focus().setImage({ src: up.url }).run(); } }
       catch (e: any) { alert(e.message || '업로드 실패'); }
       setBusy(false);
     };

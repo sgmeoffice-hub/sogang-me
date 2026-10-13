@@ -1,17 +1,19 @@
-import { createClient } from '@/lib/supabase-server';
+import { requireAdmin } from '@/lib/admin';
 import { savePage, resetPage } from '@/app/admin/actions';
 import RichEditor from '@/components/admin/RichEditor';
 import TranslateButton from '@/components/admin/TranslateButton';
+import SubmitButton from '@/components/admin/SubmitButton';
 import { staticPages } from '@/content';
 import { notFound } from 'next/navigation';
 
 export default async function EditPage(props: { params: Promise<{ slug: string }> }) {
+  const auth = await requireAdmin(); if (!auth) return null;
   const params = await props.params;
   const slug = decodeURIComponent(params.slug); const builtin = staticPages[slug]; if (!builtin) notFound();
-  const sb = await createClient(); const { data } = await sb.from('pages').select('*').eq('slug', slug).maybeSingle();
+  const { data } = await auth.sb.from('pages').select('*').eq('slug', slug).maybeSingle();
   return (<div>
     <div className="flex items-center justify-between"><h1 className="text-2xl font-bold font-mono">/{slug}</h1>
-      {data && <form action={resetPage}><input type="hidden" name="slug" value={slug} /><button className="text-[13px] text-sg-red underline">기본 내용으로 되돌리기</button></form>}</div>
+      {data && <form action={resetPage}><input type="hidden" name="slug" value={slug} /><SubmitButton className="text-[13px] text-sg-red underline" pendingText="되돌리는 중…" confirm="편집한 국문·영문 내용을 모두 버리고 기본 내용으로 되돌립니다. 계속할까요?">기본 내용으로 되돌리기</SubmitButton></form>}</div>
     <form action={savePage} className="mt-6 space-y-5 max-w-5xl">
       <input type="hidden" name="slug" value={slug} />
       <div className="grid gap-4 sm:grid-cols-2">
@@ -27,7 +29,7 @@ export default async function EditPage(props: { params: Promise<{ slug: string }
           <option value="none">번역하지 않음</option>
         </select>
       </label></div>
-      <button className="btn-primary">저장</button>
+      <SubmitButton className="btn-primary disabled:opacity-60" pendingText="저장 중…">저장</SubmitButton>
     </form>
   </div>);
 }

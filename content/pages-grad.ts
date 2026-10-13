@@ -2,21 +2,24 @@ import type { PageContent } from './types';
 
 export const researchAreas = [
   { id: 'design', ko: '설계 및 재료역학 분야', en: 'Design & Materials Mechanics',
-    descKo: '기계부품이나 구조를 설계하고 그 수명(내구성), 안전성 및 신뢰도를 해석하고 예측하며 실험과 계산을 통하여 이를 검증하는 분야로 네 개의 연구실로 구성되어 있습니다.',
-    descEn: 'Designs machine components and structures, analyzes and predicts their life, safety and reliability, and verifies them through experiment and computation. Four laboratories.',
+    // 연구실 수는 글에 적지 않는다 — 페이지가 교수진(DB)에서 센 실제 수를 제목 옆에 보여 주므로 교수 변동 때 글과 어긋났다(2026-10-13)
+    descKo: '기계부품이나 구조를 설계하고 그 수명(내구성), 안전성 및 신뢰도를 해석하고 예측하며 실험과 계산을 통하여 이를 검증하는 분야입니다.',
+    descEn: 'Designs machine components and structures, analyzes and predicts their life, safety and reliability, and verifies them through experiment and computation.',
   },
   { id: 'thermal', ko: '열, 유체 및 에너지 분야', en: 'Thermal, Fluids & Energy',
-    descKo: '에너지가 어떻게 변환되고, 유체가 어떻게 흐르며, 열이 어떻게 전달되는지를 탐구하는 학문입니다. 전기자동차·드론·로봇에 들어가는 고출력 이차전지, 반도체 공정의 정밀 세정 기술, 그리고 AI 시대의 핵심 인프라인 데이터센터의 냉각 시스템까지 첨단 기술의 한복판에는 언제나 열과 유체의 문제가 자리하고 있습니다. 최근에는 전산유체역학과 전산열전달, AI 기반 설계 및 공정 최적화를 적극 활용하여 차세대 에너지 시스템과 열관리 기술의 혁신을 이끄는 융합 연구로 영역을 넓혀가고 있습니다. 다섯 개의 연구실이 시뮬레이션과 실험을 아울러 이론·전산·실험을 폭넓게 경험할 수 있는 환경을 제공합니다.',
-    descEn: 'Studies how energy is converted, how fluids flow and how heat is transferred — from high-power batteries in EVs, drones and robots, to precision cleaning in semiconductor fabs and cooling for AI data centers. Increasingly uses CFD, computational heat transfer and AI-based design and process optimization to drive next-generation energy and thermal-management systems. Five laboratories spanning simulation and experiment.',
+    descKo: '에너지가 어떻게 변환되고, 유체가 어떻게 흐르며, 열이 어떻게 전달되는지를 탐구하는 학문입니다. 전기자동차·드론·로봇에 들어가는 고출력 이차전지, 반도체 공정의 정밀 세정 기술, 그리고 AI 시대의 핵심 인프라인 데이터센터의 냉각 시스템까지 첨단 기술의 한복판에는 언제나 열과 유체의 문제가 자리하고 있습니다. 최근에는 전산유체역학과 전산열전달, AI 기반 설계 및 공정 최적화를 적극 활용하여 차세대 에너지 시스템과 열관리 기술의 혁신을 이끄는 융합 연구로 영역을 넓혀가고 있습니다. 시뮬레이션과 실험을 아울러 이론·전산·실험을 폭넓게 경험할 수 있는 환경을 제공합니다.',
+    descEn: 'Studies how energy is converted, how fluids flow and how heat is transferred — from high-power batteries in EVs, drones and robots, to precision cleaning in semiconductor fabs and cooling for AI data centers. Increasingly uses CFD, computational heat transfer and AI-based design and process optimization to drive next-generation energy and thermal-management systems. Laboratories span simulation and experiment, offering broad exposure to theory, computation and experiment.',
+    // 교과목은 국문·영문 함께 — 영문 페이지에만 빠져 있던 것(2026-10-13). 다른 세 분야의 대학원 교과목 목록은 학과에서 받는 대로 추가
     courses: '열역학I, 유체역학I, 열역학II, 자동차동력공학, 유체역학II, 열전달, 냉동 및 공기조화, 신재생에너지공학개론, 미소열유체역학, 열유체시스템설계, 전산유체역학, 연료전지개론, 미소열유체공학, 연소및물질전달, 전산열전달, 통계열역학 및 미소열전달, 고급열전달',
+    coursesEn: 'Thermodynamics I, Fluid Mechanics I, Thermodynamics II, Automotive Powertrain Engineering, Fluid Mechanics II, Heat Transfer, Refrigeration & Air Conditioning, Introduction to Renewable Energy Engineering, Microscale Thermofluid Mechanics, Thermal-Fluid System Design, Computational Fluid Dynamics, Introduction to Fuel Cells, Microscale Thermofluid Engineering, Combustion & Mass Transfer, Computational Heat Transfer, Statistical Thermodynamics & Microscale Heat Transfer, Advanced Heat Transfer',
   },
   { id: 'control', ko: '제어, 진동, 로보틱스 분야', en: 'Control, Vibration & Robotics',
     descKo: '로봇, 컴퓨터 수치제어식 공작기계, 메카트로닉스 시스템 등을 해석하고 고속·고정밀 움직임을 위한 제어기 및 자동차, 항공기, 로봇 및 기계류의 진동현상을 해석하고 이를 최소화하기 위한 설계 및 능동 제어를 연구합니다. 또한 바이오 응용 연구로 다양한 생체 모방 로봇 및 센서, 액츄에이터를 개발하는 연구 및 의공학 응용 바이오 시스템 및 매니퓰레이션 관련 연구를 새롭게 시작하고 있습니다.',
     descEn: 'Analyzes robots, CNC machine tools and mechatronic systems; develops controllers for high-speed, high-precision motion; analyzes and actively suppresses vibration in vehicles, aircraft, robots and machinery. Also develops biomimetic robots, sensors and actuators, and biomedical manipulation systems.',
   },
   { id: 'manufacturing', ko: '생산공학 분야', en: 'Manufacturing Engineering',
-    descKo: '기계장치 및 제품을 생산하는 기술 및 배경학문의 모임으로서 전통재료 및 첨단 재료의 가공과 설계, 최신의 미소가공(micro-mechanics), 초정밀 가공 및 레이저가공과 같은 특수 가공이 포함됩니다. 최근에는 나노 공정 및 나노 구조물의 자기조립과 관련된 연구를 수행하고 있으며, 생산·조립·공정 자동화를 위하여 인공지능(AI), 전문가 시스템 등을 활용하는 분야로 다섯 개의 연구실로 구성되어 있습니다.',
-    descEn: 'The technologies and sciences of producing machines and products: processing and design of conventional and advanced materials, micro-mechanics, ultra-precision and laser machining, nano-processes and self-assembly of nanostructures, and AI and expert systems for production and assembly automation. Five laboratories.',
+    descKo: '기계장치 및 제품을 생산하는 기술 및 배경학문의 모임으로서 전통재료 및 첨단 재료의 가공과 설계, 최신의 미소가공(micro-mechanics), 초정밀 가공 및 레이저가공과 같은 특수 가공이 포함됩니다. 최근에는 나노 공정 및 나노 구조물의 자기조립과 관련된 연구를 수행하고 있으며, 생산·조립·공정 자동화를 위하여 인공지능(AI), 전문가 시스템 등을 활용하는 분야입니다.',
+    descEn: 'The technologies and sciences of producing machines and products: processing and design of conventional and advanced materials, micro-mechanics, ultra-precision and laser machining, nano-processes and self-assembly of nanostructures, and AI and expert systems for production and assembly automation.',
   },
 ];
 

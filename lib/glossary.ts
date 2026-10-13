@@ -9,7 +9,7 @@ export const glossary: [string, string][] = [
   ['한국연구재단', 'the National Research Foundation of Korea (NRF)'],
   ['과학기술정보통신부', 'the Ministry of Science and ICT'],
   ['아담샬관', 'Adam Schall Hall'],
-  ['리치과학관', 'New Ricci Hall'],
+  ['리치과학관', 'Ricci Hall'],
   ['리치별관', 'Ricci Annex'],
   ['떼이야르관', 'Teilhard Hall'],
   ['김대건관', 'Kim Daegon Hall'],
@@ -35,9 +35,12 @@ const preKoRules: [RegExp, string][] = [
   // 두 자리 연도: "26년 하반기", "26년도" → 2026 (번역기가 '26번째 해'로 옮김)
   [/(^|[^0-9])(2\d)년\s*(상반기|하반기)/g, '$120$2년 $3'],
   [/(^|[^0-9])(2\d)년도/g, '$120$2년도'],
-  // 대학원 입시의 전기/후기 = 봄/가을 학기 입학 (전기(電氣)로 오역)
-  [/전기\s*(?=(일반|특수|전문)?\s*대학원|모집|신입생|입학|입시|원서)/g, '봄학기 입학 '],
-  [/후기\s*(?=(일반|특수|전문)?\s*대학원|모집|신입생|입학|입시|원서)/g, '가을학기 입학 '],
+  // 대학원 입시의 전기/후기 = 봄/가을 학기 입학 (전기(電氣)로 오역). 낱말 첫머리에서만('충전기 모집'은 그대로),
+  // '전기 입학'은 입학을 한 번만 쓰도록 먼저 처리('봄학기 입학 입학' 중복 방지, 2026-10-13)
+  [/(?<![가-힣])전기\s*입학/g, '봄학기 입학'],
+  [/(?<![가-힣])후기\s*입학/g, '가을학기 입학'],
+  [/(?<![가-힣])전기\s*(?=(일반|특수|전문)?\s*대학원|모집|신입생|입시|원서)/g, '봄학기 입학 '],
+  [/(?<![가-힣])후기\s*(?=(일반|특수|전문)?\s*대학원|모집|신입생|입시|원서)/g, '가을학기 입학 '],
   // 회사·기관 고유명사
   [/인지컨트롤스/g, 'INZI Controls'],
   [/두산에너빌리티/g, 'Doosan Enerbility'],
@@ -58,7 +61,7 @@ const preKoRules: [RegExp, string][] = [
   // 교내 건물(번역기가 음역을 망가뜨림) — 후처리 표와 같은 표기
   [/포스코\s*프란치스코관/g, 'POSCO Francis Hall'],
   [/아담샬관/g, 'Adam Schall Hall'],
-  [/리치과학관/g, 'New Ricci Hall'],
+  [/리치과학관/g, 'Ricci Hall'],
   [/떼이야르관/g, 'Teilhard Hall'],
   [/김대건관/g, 'Kim Daegon Hall'],
   [/정하상관/g, 'Jeong Hasang Hall'],
@@ -71,13 +74,15 @@ export function preKo(s: string): string {
 
 export const glossaryPrompt = glossary.map(([k, v]) => `${k} = ${v}`).join('\n');
 
-/** 번역 결과에 남은 한국어 고유명사·표기 오류를 보정합니다. */
+/** 번역 결과에 남은 한국어 고유명사·표기 오류를 보정합니다.
+ *  2026-10-13: 호실은 1~4자리 숫자 뒤에 한글이 이어지지 않을 때만('2호선'→'Room 2선' 방지), 공백 정리는 <pre> 바깥의 연속 공백만(줄바꿈·<pre> 서식 보존) */
 export function polishEnglish(s: string): string {
   let out = s;
   for (const [ko, en] of glossary) out = out.split(ko).join(en);
-  return out
+  out = out
     .replace(/Adam Shall Hall/g, 'Adam Schall Hall')
-    .replace(/(\d+)\s*호/g, 'Room $1')
-    .replace(/([A-Za-z)\]])\s*교수/g, '$1')
-    .replace(/\s{2,}/g, ' ');
+    .replace(/(?<![0-9])(\d{1,4})\s*호(?![가-힣])/g, 'Room $1')
+    .replace(/([A-Za-z)\]])\s*교수/g, '$1');
+  // 용어집·'교수' 치환이 남긴 겹공백 정리 — <pre>…</pre> 안은 그대로 둔다
+  return out.split(/(<pre\b[\s\S]*?<\/pre\s*>)/i).map((seg, i) => (i % 2 ? seg : seg.replace(/ {2,}/g, ' '))).join('');
 }

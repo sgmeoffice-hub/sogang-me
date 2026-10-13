@@ -1,5 +1,5 @@
 import PageHero from '@/components/PageHero';
-import { getFacultyOne, getFaculty } from '@/lib/data';
+import { getFacultyOne, getFaculty, isCanonicalId } from '@/lib/data';
 import { t, T, type Locale } from '@/lib/i18n';
 import { areas } from '@/content/areas';
 import { emblemOf } from '@/components/FieldEmblems';
@@ -15,14 +15,16 @@ export function generateStaticParams() { return []; }   // 선언해야 요청 �
 /** 교수 상세. 연구분야 설명·약력(research/bio)이 비어 있는 분이 대부분이라(2026-09 기준 전임 18명 중 0·1명),
  *  본문 칸을 비워 두는 2단 구성 대신 사진+연락처 프로필 카드를 한 덩어리로 짜고, 아래에 소속 분야 소개와
  *  같은 분야 교수진을 붙여 페이지가 비어 보이지 않게 한다. research/bio가 있으면 그 사이에 그대로 보여준다. */
+/** 이름+직함 한 줄 — 검색 결과 제목(generateMetadata)과 히어로 제목이 같은 형식을 쓴다(영문은 쉼표 'Name, Professor', 직함이 없으면 이름만) */
+const displayTitle = (f: any, l: Locale) => { const name = t(f, 'name', l); const pos = t(f, 'title', l); return pos ? (l === 'en' ? `${name}, ${pos}` : `${name} ${pos}`) : name; };
 export async function generateMetadata(props: { params: Promise<{ locale: Locale; id: string }> }) {
   const params = await props.params;
+  if (!isCanonicalId(params.id)) notFound(); // '1.0'·'01' 같은 별칭 주소는 DB 조회 없이 404(별칭마다 ISR 항목이 따로 쌓이던 것, 2026-10-13 무료 한도)
   const l = params.locale; const f = await getFacultyOne(Number(params.id));
   if (!f || f.published === false) return {};
-  const name = t(f, 'name', l); const pos = t(f, 'title', l);
   const area = f.is_emeritus ? undefined : areas.find((a) => a.id === f.field);
   return pageMeta(l, `/faculty/${f.id}`, {
-    title: pos ? (l === 'en' ? `${name}, ${pos}` : `${name} ${pos}`) : name,
+    title: displayTitle(f, l),
     description: [t(f, 'lab', l), area ? (l === 'en' ? area.en : area.ko) : ''].filter(Boolean).join(' · ') || undefined,
   });
 }
@@ -30,6 +32,7 @@ export async function generateMetadata(props: { params: Promise<{ locale: Locale
 export default async function FacultyDetail(props: { params: Promise<{ locale: Locale; id: string }> }) {
   const params = await props.params;
   const l = params.locale; const ko = l === 'ko';
+  if (!isCanonicalId(params.id)) notFound();
   const f = await getFacultyOne(Number(params.id)); if (!f || f.published === false) notFound();
   // 명예교수는 분야를 쓰지 않는다 — 전임 시절 field가 남아 있어도 배지·분야 섹션·같은 분야 목록이 뜨지 않게 (리뷰 지적: 그대로 두면 명예교수 전체가 '같은 분야'로 잘못 나열되고 목록이 두 번 렌더됨)
   const area = f.is_emeritus ? undefined : areas.find((a) => a.id === f.field);
@@ -83,7 +86,7 @@ export default async function FacultyDetail(props: { params: Promise<{ locale: L
   );
 
   return (<>
-    <PageHero locale={l} section="faculty" current={kind} title={`${t(f, 'name', l)} ${t(f, 'title', l)}`} />
+    <PageHero locale={l} section="faculty" current={kind} title={displayTitle(f, l)} />
     <div className="container-site py-12 md:py-16">
       {/* 프로필: 모바일은 사진+이름을 나란히, md 이상은 사진 열 + 정보 열 */}
       <section className="md:grid md:grid-cols-[240px_1fr] lg:grid-cols-[300px_1fr] md:gap-10 lg:gap-14 items-start">
@@ -161,7 +164,7 @@ export default async function FacultyDetail(props: { params: Promise<{ locale: L
                 <p className="eyebrow">{ko ? area.ko : area.en}</p>
                 <h3 className="mt-2 font-brand text-[1.5rem] md:text-[1.8rem] leading-none break-keep">{ko ? '같은 분야 교수진' : 'Faculty in this field'}</h3>
               </div>
-              <Link href={`/${l}/faculty?field=${area.id}`} className="shrink-0 text-[14px] font-semibold text-sg-gray11 hover:text-sg-cardinal whitespace-nowrap">{T(l, 'more')} +</Link>
+              <Link href={`/${l}/faculty#${area.id}`} className="shrink-0 text-[14px] font-semibold text-sg-gray11 hover:text-sg-cardinal whitespace-nowrap">{T(l, 'more')} +</Link>
             </div>
             {peers.length === 0 ? (
               <p className="mt-5 py-8 text-center text-[14px] text-sg-gray9 border border-dashed border-sg-line">{ko ? '같은 분야의 다른 교수진이 없습니다.' : 'No other faculty in this field.'}</p>

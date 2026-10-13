@@ -1,6 +1,5 @@
-import Link from 'next/link';
-import { createClient } from '@/lib/supabase-server';
-import { adminBase } from '@/lib/admin';
+import Link from '@/components/Link';
+import { adminBase, requireAdmin } from '@/lib/admin';
 import { boards } from '@/lib/nav';
 import { ui } from '@/lib/i18n';
 import { fmtDate } from '@/components/PostCard';
@@ -14,10 +13,11 @@ function pageList(page: number, pages: number): number[] {
 }
 
 export default async function Posts(
-  props: { searchParams: Promise<{ board?: string; page?: string; q?: string }> }
+  props: { searchParams: Promise<{ board?: string; page?: string; q?: string; note?: string }> }
 ) {
+  const auth = await requireAdmin(); if (!auth) return null;
   const searchParams = await props.searchParams;
-  const sb = await createClient(); const b = adminBase();
+  const { sb } = auth; const b = adminBase();
   const board = searchParams.board || 'notice'; const pageN = Number(searchParams.page); const page = Number.isFinite(pageN) && pageN >= 1 ? Math.floor(pageN) : 1; const per = 30;
   let q = sb.from('posts').select('id,title_ko,title_en,author,created_at,is_pinned,published,view_count', { count: 'exact' }).eq('board', board);
   if (searchParams.q) q = q.ilike('title_ko', `%${searchParams.q}%`);
@@ -29,6 +29,8 @@ export default async function Posts(
         <h1 className="text-2xl font-bold">게시판 관리</h1>
         <Link href={`${b}/posts/new?board=${board}`} className="btn-primary">+ 새 글</Link>
       </div>
+      {/* 저장 동작(actions.ts savePost·restoreVersion)이 번역 실패·이미 삭제된 글 등 처리 결과를 ?note=로 돌려보낸다(2026-10-13) */}
+      {searchParams.note && <p className="mt-3 border-l-4 border-sg-cardinal px-4 py-2 text-[13px] font-semibold break-keep" style={{ backgroundColor: 'rgba(175,39,47,.06)' }}>{searchParams.note}</p>}
       <div className="mt-5 flex flex-wrap gap-1">{boards.map((bd) => <Link key={bd} href={`${b}/posts?board=${bd}`} className={`px-3 py-1.5 text-[13px] border ${bd === board ? 'bg-sg-ink text-white border-sg-ink' : 'bg-white border-sg-line'}`}>{ui.ko[bd]}</Link>)}</div>
       <form className="mt-4 flex gap-0"><input type="hidden" name="board" value={board} /><input name="q" defaultValue={searchParams.q} placeholder="제목 검색" className="input !w-64" /><button className="btn-ghost !py-2 bg-white">검색</button></form>
       {/* 폰에서는 표만 가로로 밀린다(페이지 전체가 축소되지 않게) */}

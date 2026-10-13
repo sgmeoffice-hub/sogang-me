@@ -35,15 +35,16 @@ export default async function Grad(props: { params: Promise<{ locale: Locale; sl
             const color = areas.find((x) => x.id === a.id)?.color;
             return (
               <section key={a.id} id={a.id} className="scroll-mt-40">
-                <div className="flex items-center gap-5 border-t-2 border-sg-ink pt-6">
-                  {E && <div className="w-[110px] h-[74px] shrink-0" style={{ color }}><E className="w-full h-full" /></div>}
-                  <div>
-                    <h2 className="font-brand text-[1.7rem] md:text-[2.1rem] leading-tight">{ko ? a.ko : a.en}</h2>
+                {/* 모바일(390px)은 엠블럼 아래로 제목을 내린다 — 긴 분야명이 110px 엠블럼 옆에서 2~3줄로 꺾이지 않게 */}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5 border-t-2 border-sg-ink pt-6">
+                  {E && <div className="w-[84px] h-[56px] sm:w-[110px] sm:h-[74px] shrink-0" style={{ color }}><E className="w-full h-full" /></div>}
+                  <div className="min-w-0">
+                    <h2 className="font-brand text-[1.7rem] md:text-[2.1rem] leading-tight break-keep">{ko ? a.ko : a.en}</h2>
                     <p className="text-[13.5px] text-sg-gray9 mt-1">{ko ? `${a.en} · ${labs.length}개 연구실` : `${labs.length} ${labs.length === 1 ? 'laboratory' : 'laboratories'}`}</p>
                   </div>
                 </div>
                 <p className="mt-4 text-[15.5px] leading-relaxed text-[#2a2d33]">{ko ? a.descKo : a.descEn}</p>
-                {a.courses && ko && <p className="mt-2 text-[13.5px] text-sg-gray9"><span className="font-semibold text-sg-ink">교과목:</span> {a.courses}</p>}
+                {(ko ? a.courses : a.coursesEn) && <p className="mt-2 text-[13.5px] text-sg-gray9 break-keep"><span className="font-semibold text-sg-ink">{ko ? '교과목:' : 'Courses:'}</span> {ko ? a.courses : a.coursesEn}</p>}
                 <div className="mt-6 overflow-x-auto">
                   <table className="w-full text-[14.5px]">
                     <thead><tr className="text-left text-[12px] uppercase tracking-wider text-sg-gray9 border-b border-sg-line">
@@ -87,7 +88,7 @@ export default async function Grad(props: { params: Promise<{ locale: Locale; sl
                 <section className="card p-6 h-full">
                   <div className="flex items-baseline justify-between gap-3 border-b border-sg-line pb-3">
                     <h2 className="text-[19px] font-bold">{ko ? g.ko : g.en}</h2>
-                    <span className="text-[12.5px] text-sg-gray9 shrink-0">{members.length}{ko ? '명' : ''}</span>
+                    <span className="text-[12.5px] text-sg-gray9 shrink-0">{ko ? `${members.length}명` : `${members.length} ${members.length === 1 ? 'member' : 'members'}`}</span>
                   </div>
                   <ul className="mt-4 space-y-2.5">
                     {members.map((f: any) => (

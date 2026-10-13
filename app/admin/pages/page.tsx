@@ -1,10 +1,11 @@
-import Link from 'next/link';
-import { createClient } from '@/lib/supabase-server';
-import { adminBase } from '@/lib/admin';
+import Link from '@/components/Link';
+import { adminBase, requireAdmin } from '@/lib/admin';
 import { staticPages } from '@/content';
 import { nav } from '@/lib/nav';
-export default async function PagesAdmin() {
-  const sb = await createClient(); const b = adminBase();
+export default async function PagesAdmin(props: { searchParams: Promise<{ note?: string }> }) {
+  const auth = await requireAdmin(); if (!auth) return null;
+  const { note } = await props.searchParams;   // savePage가 번역 실패 등 처리 결과를 돌려보낸다(2026-10-13)
+  const { sb } = auth; const b = adminBase();
   const { data } = await sb.from('pages').select('slug,updated_at');
   const edited = new Map((data || []).map((p: any) => [p.slug, p.updated_at]));
   const rows = Object.keys(staticPages).map((slug) => {
@@ -13,6 +14,7 @@ export default async function PagesAdmin() {
   });
   return (<div>
     <h1 className="text-2xl font-bold">페이지 내용 관리</h1>
+    {note && <p className="mt-3 border-l-4 border-sg-cardinal px-4 py-2 text-[13px] font-semibold break-keep" style={{ backgroundColor: 'rgba(175,39,47,.06)' }}>{note}</p>}
     <p className="mt-2 text-[13px] text-sg-steel">소개·교과과정·산학협력 등 고정 페이지의 본문을 수정합니다. 수정하지 않은 페이지는 코드에 내장된 기본 내용을 표시합니다. (연혁·학사일정·기초전공분야·연구그룹은 구조화 데이터라 코드 내 content/ 폴더에서 관리)</p>
     <div className="mt-6 overflow-x-auto"><table className="w-full min-w-[560px] text-[13px] bg-white border border-sg-line">
       <thead className="bg-sg-mist text-left font-mono text-[11px] uppercase tracking-wider text-sg-steel"><tr><th className="p-3">페이지</th><th className="p-3 w-40">경로</th><th className="p-3 w-40">상태</th></tr></thead>

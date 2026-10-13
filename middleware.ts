@@ -24,12 +24,15 @@ async function legacyRedirect(req: NextRequest): Promise<NextResponse | null> {
     const tb = searchParams.get('bo_table') || '';
     const wr = searchParams.get('wr_id') || '';
     if (tb.startsWith('sub6_7')) return to('/ko/reservation'); // 시설 예약 달력
-    if (tb && wr) {
+    // 그누보드 bo_table은 영숫자·밑줄, wr_id는 정수 — 그 밖의 값은 DB를 묻지 않고 게시판 매핑으로 간다.
+    // 예전엔 값을 그대로 PostgREST or=() 필터에 끼워 넣어 조작된 wr_id가 조건을 덧붙일 수 있었고, 봇이 긁는 경로라 DB 왕복만 낭비했다(2026-10-13)
+    if (/^[A-Za-z0-9_]{1,32}$/.test(tb) && /^\d{1,10}$/.test(wr)) {
       // 이관 때 저장한 legacy_id(g5:테이블:번호 / g4:…)로 새 게시글을 찾는다
       try {
         const r = await fetch(
           `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/posts?select=id,board&published=eq.true&or=(legacy_id.eq.g5:${tb}:${wr},legacy_id.eq.g4:${tb}:${wr})&limit=1`,
-          { headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!}` } },
+          // 3초 안에 답이 없으면 포기하고 307 게시판 이동 — Supabase가 느릴 때 엣지 함수가 매달려 있지 않게
+          { headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, Authorization: `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!}` }, signal: AbortSignal.timeout(3000) },
         );
         const d = await r.json();
         if (Array.isArray(d) && d[0]) return to(`/ko/board/${d[0].board}/${d[0].id}`);
@@ -95,7 +98,8 @@ export async function middleware(req: NextRequest) {
       // 실제 사용자의 클릭(문서 이동)일 때만 저장한다. next/link 프리페치·RSC 요청(헤더 rsc / next-router-prefetch)이 이 주소를
       // 미리 받아 가면서 쿠키가 반대 언어로 뒤집히던 문제(2026-09-24)의 서버 쪽 방어선.
       const prefetch = req.headers.has('next-router-prefetch') || req.headers.has('rsc') || (req.headers.get('sec-fetch-dest') || 'document') !== 'document';
-      if (!prefetch) res.cookies.set('sg_lang', first, { path: '/', maxAge: 60 * 60 * 24 * 365 });
+      // sameSite lax: 헤더의 언어 버튼은 같은 사이트 최상위 이동이라 영향 없음. secure는 로컬 http 개발(Safari)을 위해 production에서만(2026-10-13)
+      if (!prefetch) res.cookies.set('sg_lang', first, { path: '/', maxAge: 60 * 60 * 24 * 365, sameSite: 'lax', secure: process.env.NODE_ENV === 'production' });
       return res;
     }
     return NextResponse.next();
@@ -128,5 +132,8 @@ export const config = {
     { source: '/(ko|en)/:path*', has: [{ type: 'query', key: 'setlang' }] },
     // 옛 사이트 리다이렉트 대상 (점(.)이 들어간 경로는 위 일반 매처에서 제외되므로 명시)
     '/bbs/:path*', '/v2/:path*', '/kor/:path*', '/index.php', '/english/:path*',
+    // 관리자 경로도 점(.)이 든 하위 경로(/admin/faculty/1.0 등)가 일반 매처를 빠져나가 /admin 차단·/adm 재작성이 안 되던 것을 막는다(2026-10-13).
+    // 매처는 정적으로 분석되므로 ADMIN_PATH 값('adm')을 그대로 적는다 — 환경변수를 바꾸면 여기도 함께 바꿀 것
+    '/admin/:path*', '/adm/:path*',
   ],
 };

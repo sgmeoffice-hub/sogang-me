@@ -20,8 +20,9 @@ async function readFacultyNames(): Promise<NameRow[]> {
   return (data || []).filter((r: any) => r.name_ko && r.name_en)
     .map((r: any) => ({ ko: String(r.name_ko).trim(), en: String(r.name_en).trim().replace(/\s+/g, ' '), labKo: r.lab_ko, labEn: r.lab_en }));
 }
-/** 요청마다 새로 그리는 목록·예약 페이지에서도 DB를 매번 읽지 않도록 1시간 캐시(태그 'site' — 교수 저장 시 refreshSite로 비움) */
-const facultyNamesCached = unstable_cache(readFacultyNames, ['facultyNames'], { revalidate: 3600, tags: ['site'] });
+/** 요청마다 새로 그리는 목록·예약 페이지에서도 DB를 매번 읽지 않도록 하루 캐시(태그 'site'·'faculty' — 교수 저장 시 revalidateTag('faculty')로 비우므로
+ *  길게 잡아도 되고, 무료 한도(Supabase 전송량) 절약에 유리하다. 2026-10-13) */
+const facultyNamesCached = unstable_cache(readFacultyNames, ['facultyNames'], { revalidate: 86400, tags: ['site', 'faculty'] });
 
 export async function facultyNames(): Promise<NameRow[]> {
   if (cache && Date.now() - cache.at < 10 * 60 * 1000) return cache.rows;
@@ -31,7 +32,13 @@ export async function facultyNames(): Promise<NameRow[]> {
     fresh = false;
     cache = { at: Date.now(), rows };
     return rows;
-  } catch { return cache?.rows ?? []; }
+  } catch (e: any) {
+    console.error('facultyNames failed', e?.message);
+    // 사본이 있으면 그걸 쓰고, 없으면 던진다 — 빈 목록으로 교수 이름을 일반 로마자로 그린 영문 페이지가 ISR 캐시에 하루~일주일 굳는 것을 막는다(#12, 2026-10-13).
+    // 던지면 Next가 이전에 만든 페이지를 그대로 두고 잠시 뒤 다시 시도한다.
+    if (!cache) throw e;
+    return cache.rows;
+  }
 }
 
 /** 영문 페이지의 사람 이름 칸(조원·지도교수·예약자): 교수는 공식 영문 이름, 나머지 한글 이름은 로마자(표리원 → Riwon Pyo).

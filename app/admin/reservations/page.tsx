@@ -1,17 +1,18 @@
-import Link from 'next/link';
-import { createClient } from '@/lib/supabase-server';
+import Link from '@/components/Link';
 import { addReservation, updateReservation } from '@/app/admin/actions';
 import { ReservationStatusButton } from '@/components/admin/ReservationButtons';
+import SubmitButton from '@/components/admin/SubmitButton';
 import ReservationCalendar from '@/components/ReservationCalendar';
 import { facilities } from '@/lib/nav';
-import { adminBase } from '@/lib/admin';
+import { adminBase, requireAdmin } from '@/lib/admin';
 import { START_SLOTS, END_SLOTS, kstToday, monthRange } from '@/lib/reservation';
 
 type SP = { f?: string; y?: string; m?: string; d?: string; edit?: string; note?: string };
 
 export default async function ReservationsAdmin(props: { searchParams: Promise<SP> }) {
+  const auth = await requireAdmin(); if (!auth) return null;
   const searchParams = await props.searchParams;
-  const sb = await createClient();
+  const { sb } = auth;
   const base = `${adminBase()}/reservations`;
   const today = kstToday();
   // 화면 상태(시설·연월·마지막 입력 날짜)는 쿼리스트링에 유지 — 한 건 등록 후에도 같은 시설로 이어서 입력할 수 있게
@@ -23,10 +24,12 @@ export default async function ReservationsAdmin(props: { searchParams: Promise<S
   const here = `${base}?f=${facility}&y=${y}&m=${m}&d=${lastDate}`;
   const fac = (id: string) => facilities.find((f) => f.id === id)?.ko || id;
   const { start, end } = monthRange(y, m);
+  // 중복 검사용 확정 예약은 오늘부터 1년 창으로 한정 — PostgREST max-rows(1,000) 밖의 행은 조용히 잘려 경고가 빠지므로 창을 좁혀 그 안에 들어오게 한다(2026-10-13)
+  const horizon = new Date(Date.parse(today) + 366 * 86400e3).toISOString().slice(0, 10);
 
   const [{ data: pending }, { data: approvedAll }, { data: monthRows }, editRes] = await Promise.all([
     sb.from('reservations').select('*').eq('status', 'pending').order('date').order('start_time'),
-    sb.from('reservations').select('id,facility,date,start_time,end_time,user_name').eq('status', 'approved').gte('date', today),
+    sb.from('reservations').select('id,facility,date,start_time,end_time,user_name').eq('status', 'approved').gte('date', today).lte('date', horizon),
     // 거절된 건도 목록에는 남긴다(복구·삭제 가능) — 달력에는 표시하지 않음
     sb.from('reservations').select('*').eq('facility', facility).gte('date', start).lte('date', end).order('date').order('start_time'),
     searchParams.edit ? sb.from('reservations').select('*').eq('id', Number(searchParams.edit)).maybeSingle() : Promise.resolve({ data: null } as any),
@@ -86,7 +89,7 @@ export default async function ReservationsAdmin(props: { searchParams: Promise<S
           <label className="sm:col-span-2 flex items-center gap-2">상태
             <select name="status" defaultValue={editing.status} className="input"><option value="approved">확정</option><option value="pending">승인 대기</option><option value="rejected">거절</option></select>
           </label>
-          <button className="btn-primary sm:col-span-4 justify-center">저장</button>
+          <SubmitButton className="btn-primary sm:col-span-4 justify-center disabled:opacity-60" pendingText="저장 중…">저장</SubmitButton>
         </form>
         <p className="mt-2 text-[12px] text-sg-steel">겹치는 예약이 있으면 저장되지 않고 안내가 표시됩니다.</p>
       </section>
@@ -104,7 +107,8 @@ export default async function ReservationsAdmin(props: { searchParams: Promise<S
         <label className="flex items-center gap-2">종료일 <input name="repeat_until" type="date" className="input !w-auto" /></label>
         <span className="text-[12px] text-sg-steel break-keep">랩미팅처럼 같은 시간을 여러 날짜에 넣을 때 사용 — 시작 날짜부터 종료일까지 같은 요일에 등록되며, 겹치는 날짜는 건너뛰고 알려줍니다 (최대 30건).</span>
       </div>
-      <button className="btn-primary sm:col-span-6 justify-center">등록</button>
+      {/* 반복 등록은 최대 30건을 순서대로 넣느라 몇 초 걸린다 — 두 번 눌리면 같은 예약이 겹쳐 들어가므로 처리 중 비활성화 */}
+      <SubmitButton className="btn-primary sm:col-span-6 justify-center disabled:opacity-60" pendingText="등록 중…">등록</SubmitButton>
     </form>
 
     <h2 className="mt-10 font-bold">시설별 예약 달력</h2>
