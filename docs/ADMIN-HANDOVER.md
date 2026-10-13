@@ -11,24 +11,24 @@
 ## 2. 사용량 한도·요금·중단 위험
 | 서비스 | 요금제 | 한도 | 넘으면 |
 |---|---|---|---|
-| Vercel(서버) | **목표: Hobby(무료)**. 2026-09-16~10-15 임시 Pro(월 20달러) | Hobby: 엣지 요청·함수 호출 월 100만, Active CPU 월 4시간, 전송 100GB | 청구 없이 **사이트 일시정지(다음 주기까지)** — 2026-09 실제 중단. 요청 절감 조치 후 사용량을 보고 갱신일(매월 15일 16시) 1~2일 전에 Hobby로 하향(하향은 즉시 적용). 넘을 것 같으면 그때만 Pro |
+| Vercel(서버) | **목표: Hobby(무료)**. 2026-09-16부터 Pro(월 20달러) 유지 중 | Hobby 월 한도: CDN 요청 100만 · 함수 호출 100만 · Active CPU 4시간 · Fast Origin 10GB · Fast Data 100GB · ISR 쓰기 20만/읽기 100만 · Provisioned Memory 360GB-h | 청구 없이 **사이트 일시정지(다음 주기까지)** — 2026-09-16 실제 중단. **하향 여부는 `docs/HANDOFF.md` 맨 위 최신 판정을 따른다**(갱신일 매월 15일 16:00 KST 전 오전에 Usage·Firewall 실측으로 판단). Pro→Hobby 하향은 즉시 적용되고, Hobby는 한도를 넘어도 요금은 없고 멈추기만 한다. 아래 하루 안전선 안이어야 하향 |
 | Supabase(DB·로그인) | Free | 전송량 월 5GB·DB 0.5GB·파일 1GB | "사용 제한" 가능 → 게시판 빈 화면·관리자 로그인 불가. 2026-09 전송량 67% → 9/25 캐시 개선. 매달 확인, 필요 시 Pro(월 25달러) |
 | Cloudflare R2(파일·백업) | 무료 한도 | 저장 10GB(현재 약 2.6GB) | 멈추지 않고 등록 카드로 소액 청구 |
 | Claude | 구독 | 요금제별 사용량 | 사이트 영향 없음, 작업만 대기 |
 | Google | 무료 | 15GB(Gmail·드라이브 공유) | 메일 수신·주간 드라이브 백업 실패 |
 
-**운영 원칙: 최대한 무료.** Hobby에서는 요금이 아니라 "중단"이 위험이므로 매달 Vercel Usage를 확인한다(일 평균 함수 호출·엣지 요청 3만 건, Active CPU 8분 이하가 안전선). 배포(main 푸시)마다 페이지 캐시가 비워져 다시 만들어지므로 하루에 여러 번 배포하지 않는다. 결제 카드 만료·해지 시 유료 서비스가 멈출 수 있다. 한도 경고 메일은 모두 학과 Gmail로 온다.
+**운영 원칙: 최대한 무료.** Hobby에서는 요금이 아니라 "중단"이 위험이므로 매달 Vercel Usage를 확인한다. **하루 안전선**(Hobby 한도의 1/30): CDN 요청·함수 호출 ≈3만, Active CPU ≈8분, Fast Origin ≈300MB, ISR 쓰기 ≈6천 — HANDOFF 판정은 여유를 둬 2.7만·6분·270MB를 쓴다. **배포(main 푸시) 1회 = CPU 약 10분·Origin 약 200MB·ISR 쓰기 약 1.7만**이 추가로 들고 페이지 캐시가 비워져 다시 만들어지므로, 코드 변경은 몰아서 배포하고 그달 배포 횟수를 함께 센다(평시 ISR 쓰기 2.8천/일 기준 월 5~6회가 상한선). 결제 카드 만료·해지 시 유료 서비스가 멈출 수 있다. 한도 경고 메일은 모두 학과 Gmail로 온다.
 
 ## 3. 계정·키 (값 없이 목록만)
 - 계정: 학과 Gmail · Claude(claude.ai/code) · GitHub `sgmeoffice-hub` · Vercel 팀 "SG office"/프로젝트 `sogang-me` · Supabase 프로젝트 "Sogang ME" · Cloudflare(R2 `sogang-me-media` 공개, `sogang-me-backup` 비공개) · 관리자 화면 `/adm`(학과 공용 계정, Supabase Auth) · Google 드라이브·Apps Script·Search Console · (선택) Resend · 학교 도메인 담당(디지털정보처) · 옛 홈페이지 호스팅(10월 말 종료 예정)
-- Vercel 환경변수: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BACKUP_BUCKET`, (선택) `RESEND_API_KEY`·`NOTIFY_EMAIL`·`ADMIN_PATH`·`ANTHROPIC_API_KEY`(미사용)
-- Claude Code 환경(Environment): `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, (설정 시) `VERCEL_TOKEN`(Vercel › Account Settings › Tokens의 'claude-code', SG office 팀 범위·만료 없음 — Claude가 Vercel 사용량·방화벽을 직접 조회·설정. Claude 계정과 함께 그대로 넘어가므로 인수인계 때 별도 조치 없음. 없거나 문제가 생겨도 사이트는 정상이며, Tokens에서 새로 만들어 같은 자리에 넣으면 됨) / Apps Script 스크립트 속성: service_role 키
-- 키를 교체할 때는 위 보관 위치를 **모두** 새 값으로 바꾸고 Vercel 재배포(환경변수 변경만으로는 재배포되지 않음).
+- Vercel 환경변수: **전체 목록·용도는 리포의 `.env.example`**(코드가 읽는 변수의 유일한 목록). 요약 — 필수: `NEXT_PUBLIC_SUPABASE_URL`·`NEXT_PUBLIC_SUPABASE_ANON_KEY`·`SUPABASE_SERVICE_ROLE_KEY`·`CRON_SECRET`(없으면 매일 번역 보완·백업 cron이 503으로 멈춤) / 백업: `R2_ACCOUNT_ID`·`R2_ACCESS_KEY_ID`·`R2_SECRET_ACCESS_KEY`·`R2_BACKUP_BUCKET`(선택 `R2_MEDIA_BUCKET`) / 메일: `RESEND_API_KEY`(선택 `NOTIFY_EMAIL`·`NOTIFY_FROM`) / 그 밖: `ADMIN_PATH`·`NEXT_PUBLIC_SITE_URL`·`ANTHROPIC_API_KEY`(미사용)·`ANTHROPIC_MODEL`·`TRANSLATE_CONTACT_EMAIL`
+- Claude Code 환경(Environment)에만: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, (설정 시) `VERCEL_TOKEN`(Vercel › Account Settings › Tokens의 'claude-code', SG office 팀 범위·만료 없음 — Claude가 Vercel 사용량·방화벽을 직접 조회·설정. **Vercel 환경변수에는 넣지 않는다.** Claude 계정과 함께 그대로 넘어가므로 인수인계 때 별도 조치 없음. 없거나 문제가 생겨도 사이트는 정상이며, Tokens에서 새로 만들어 같은 자리에 넣으면 됨) / Apps Script 스크립트 속성: service_role 키
+- 키를 교체할 때는 위 보관 위치를 **모두** 새 값으로 바꾸고 Vercel 재배포(환경변수 변경만으로는 재배포되지 않음). Supabase service_role 키를 바꾸면 Vercel·Claude Code 환경·Apps Script 세 곳.
 
 ## 4. 구조
-방문자 → me.sogang.ac.kr(학교 DNS) → **Vercel**(Next.js 14, GitHub main 푸시 시 1~2분 자동 배포) → **Supabase**(DB·로그인·새 업로드) / **R2**(옛 파일 3,253개·홈 영상) · 코드 원본 **GitHub**(공개).
+방문자 → me.sogang.ac.kr(학교 DNS) → **Vercel**(Next.js 15, GitHub main 푸시 시 1~2분 자동 배포) → **Supabase**(DB·로그인·새 업로드) / **R2**(옛 파일 3,253개·홈 영상) · 코드 원본 **GitHub**(공개).
 - 고칠 곳: DB 데이터 → `/adm` · 고정 문구 → `content/*.ts` · 공통 문구 → `lib/i18n.ts` · 화면 → `app/`, `components/`
-- 자동 작업(vercel.json, KST): 03:00 영문 번역 보완, 04:00 백업
+- 자동 작업(vercel.json, KST): 03시대 영문 번역 보완, 04시대 백업. **Hobby는 cron 최대 2개·하루 1회**이며 예정 시각부터 1시간 안에 실행된다(정확한 분 보장 없음) — 이미 2개를 다 쓰고 있으므로 새 정기 작업은 기존 `/api/cron` 라우트에 합친다. 둘 다 `CRON_SECRET`이 있어야 돈다.
 
 ## 5. 한·영 번역
 1. 국문으로 저장 → 2. 무료 번역기로 제목·요약·본문 자동 번역(서식 유지) → 3. 번역 전 흔한 오역 표현 치환(두 자리 연도, 입시 전기/후기, 회사·건물명 — `lib/glossary.ts preKo`), 번역 후 교수 이름 공식 표기(`lib/names`) → 4. 막히면 빈칸으로 두고 매일 03시·관리자 접속 때 최근 60일 자동 보완 → 5. 영문이 없으면 국문+“번역 준비 중” 표시.
@@ -40,12 +40,12 @@
 | 대상 | 위치 | 주기·보관 |
 |---|---|---|
 | 코드·문서 | GitHub | 영구(이력) |
-| DB 전체(8개 표, 압축 약 2MB) | R2 `sogang-me-backup` db/daily, db/monthly | 매일 04시, 30일 + 12개월 |
-| DB 주간 사본 | 구글드라이브 `db-backup_날짜`(Apps Script) | 매주 월(설치 여부 확인) |
+| DB 전체(8개 표, 압축 약 2MB) | R2 `sogang-me-backup` db/daily, db/monthly | 매일 04시대, 30일 + 12개월 |
+| DB 주간 사본(보조, 7개 표 — 학생 개인정보가 있는 URECA 지원서는 드라이브에 넣지 않음) | 구글드라이브 `db-backup_날짜`(Apps Script) | 매주 월(**설치 여부 미확인** — 폴더가 없으면 `scripts/gas-db-backup.gs` 설치 절차대로, 시간대 Asia/Seoul) |
 | 업로드 파일 / 옛 파일 사본 | R2 files/media, files/r2 | 매일(옛 파일은 이어서 복사, 3,253개) |
 | 삭제 글 / 수정 전 내용 | Supabase 비공개 `vault` | 30일 / 글마다 20개·90일 |
 
-확인은 `/adm` › 백업·휴지통(이틀 넘게 실패 시 대시보드 경고). 복원: 글 한 건은 휴지통·수정 이력 버튼, 전체는 Claude에게 요청(`scripts/restore-backup.mjs`, 미리보기 기본).
+확인은 `/adm` › 백업·휴지통(이틀 넘게 실패 시 대시보드 경고). 복원: 글 한 건은 휴지통·수정 이력 버튼, 전체는 Claude에게 요청(`scripts/restore-backup.mjs`, 미리보기 기본 — 전체 덮어쓰기는 `--all --apply`를 명시해야 하며 그 사이 들어온 예약·지원서가 백업 시점으로 돌아간다). 새 Supabase 프로젝트로 통째로 옮기는 절차는 `docs/OPERATIONS.md` §4.
 
 ## 7. Claude Code
 - 준비: claude.ai에 학과 계정 로그인 → 설정 › Connectors에서 GitHub(sgmeoffice-hub) 연결 확인 → claude.ai/code 환경에 `SUPABASE_URL`·`SUPABASE_SERVICE_ROLE_KEY` 확인.
@@ -54,7 +54,7 @@
 - 외부 대시보드(Cloudflare·Vercel 설정)는 Claude가 직접 조작하지 못한다 — 안내대로 직접 하거나 브라우저의 Claude in Chrome 확장 사용.
 
 ## 8. 정기 점검(매월)
-백업 성공 · Vercel Usage(Hobby 한도 대비)/Billing · Supabase Egress(5GB 중) · Claude 구독 · (연 1회) 학과장·연혁·학사일정·교수진 반영, Search Console.
+백업 성공 · Vercel Usage(§2 하루 안전선 대비 — CDN 요청·함수 호출·CPU뿐 아니라 **Fast Origin·ISR 쓰기**도 보고, 그달 배포 횟수를 센다)/Billing · Supabase Egress(5GB 중) · Claude 구독 · (연 1회) 학과장·연혁·학사일정·교수진 반영, Search Console.
 
 ## 9. 알려진 한계·주의
 - 목록 조회수는 최대 10분 늦게 반영. DB를 관리자 화면 밖에서 일괄 수정하면 캐시 새로 고침 필요(`POST /api/admin/revalidate`, Claude가 처리).

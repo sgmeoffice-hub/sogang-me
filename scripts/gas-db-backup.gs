@@ -15,10 +15,20 @@
  *     (⚠ service_role 키는 이 스크립트 속성에만 두고 코드·리포에 절대 넣지 않는다)
  *  3) 편집기 상단에서 함수 `setup` 선택 → 실행 → 권한 승인
  *     → 즉시 1회 백업이 돌고, 매주 자동 실행 트리거가 걸린다.
+ *  4) 프로젝트 설정 → 시간대를 Asia/Seoul로(또는 '매니페스트 표시' 후 appsscript.json에 "timeZone": "Asia/Seoul").
+ *     트리거의 atHour(4)는 프로젝트 시간대 기준이라, 기본값(미국)이면 '월 04시 KST'가 아니다.
+ *
+ * 위치: 이 사본은 R2 매일 백업(lib/backup.ts, 8개 표·30일+12개월)의 보조 — Cloudflare 계정 밖에 두는 두 번째 사본.
+ *       설치 여부는 드라이브에 db-backup_ 폴더가 생겼는지로 확인한다(2026-10-13 기준 미확인, docs/HANDOFF.md).
+ *       복원은 R2 형식(scripts/restore-backup.mjs)만 지원 — 이 덤프는 표별 JSON이라 손으로 옮겨야 한다.
  */
 
 const FOLDER_ID = '18Puf0uiMeVUa29tn6yV4zRRTGKC-m4Lp'; // 학과 드라이브 백업 폴더
-const TABLES = ['posts', 'faculty', 'reservations', 'banners', 'pages', 'site_settings'];
+// ureca_applications는 일부러 뺀다: 학생 이름·학번·전화·이메일(개인정보)을 Gmail과 공유하는 드라이브(15GB, 마스터 계정)로
+// 넓히지 않기 위해 — R2 비공개 버킷의 매일 백업에만 둔다(CLAUDE.md 학생 개인정보 게시 금지). 넣으려면 책임자 결정 필요.
+const TABLES = ['posts', 'faculty', 'reservations', 'banners', 'pages', 'site_settings', 'admins'];
+// 표별 기본 키 — offset 페이징은 정렬이 없으면 행이 겹치거나 빠질 수 있다(posts는 조회수 갱신으로 순서가 흔들림). lib/backup.ts PK와 동일
+const PK = { pages: 'slug', site_settings: 'key', admins: 'email' };
 const KEEP = 26; // 보관할 백업 세트 수 (주 1회 × 26 = 약 반년)
 
 function backup() {
@@ -36,7 +46,7 @@ function backup() {
     let rows = [];
     let off = 0;
     while (true) {
-      const resp = UrlFetchApp.fetch(base + '/rest/v1/' + t + '?select=*&limit=1000&offset=' + off, {
+      const resp = UrlFetchApp.fetch(base + '/rest/v1/' + t + '?select=*&order=' + (PK[t] || 'id') + '.asc&limit=1000&offset=' + off, {
         headers: { apikey: key, Authorization: 'Bearer ' + key },
         muteHttpExceptions: true,
       });
