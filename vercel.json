@@ -1,5 +1,5 @@
 {
-  "ignoreCommand": "p=\"${VERCEL_GIT_PREVIOUS_SHA:-HEAD^}\"; git cat-file -e \"$p^{commit}\" 2>/dev/null || p=HEAD^; git cat-file -e \"$p^{commit}\" 2>/dev/null && git diff --quiet \"$p\" HEAD -- . ':(exclude)docs' ':(exclude)*.md' ':(exclude)scripts' ':(exclude)supabase' ':(exclude).env.example' && exit 0; exit 1",
+  "ignoreCommand": "sh scripts/vercel-ignore.sh",
   "routes": [
     {
       "src": "^/(?:v2/)?bbs(?:/.*)?$",
