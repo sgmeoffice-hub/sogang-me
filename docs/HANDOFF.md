@@ -1,12 +1,17 @@
 # HANDOFF — 세션 간 인수인계
 
-마지막 갱신: 2026-10-12
+마지막 갱신: 2026-10-13
 
 ## 완료 (2026-10-12) — 영문 페이지 검색 정보(제목·설명·hreflang) (책임자: "구글에서 영어로 검색하면 영어 버전이 나와야 하는데 한글로 나옴")
 - **원인**: 모든 페이지(국문·영문)가 루트 레이아웃의 제목 하나("서강대학교 기계공학과 | Sogang Mechanical Engineering")와 국문 섞인 설명을 같이 썼고, canonical·hreflang이 없었다. 구글봇(미국 IP)은 `/`에서 `/en`으로 보내져 영문 본문을 읽지만 제목은 한글로 표시됨.
 - **조치**: `lib/seo.ts`(pageMeta·navLabel·plainExcerpt·siteJsonLd) + `lib/i18n.ts` siteName·siteTitle·siteDesc. `app/[locale]/layout.tsx` generateMetadata로 언어별 기본 제목·템플릿·설명·og(영문: "Department of Mechanical Engineering | Sogang University", 하위 "X | Mechanical Engineering, Sogang University"). 모든 공개 페이지에 generateMetadata — 메뉴 이름·게시글 제목/요약·교수 이름/연구실로 제목·설명, canonical(자기 언어 주소), hreflang ko/en + x-default(홈은 `/`, 나머지는 국문). 홈에 WebSite JSON-LD(사이트 이름 '서강대학교 기계공학과' — 구글 사이트 이름은 도메인당 하나). 루트 레이아웃의 제목 템플릿은 제거(언어별 기본 제목 뒤에 국문 이름이 또 붙던 것, 관리자 제목 중복도 같이 해결). `getPost`·`getFacultyOne`은 React cache로 메타데이터·본문 중복 조회 방지.
 - **Search Console 확인(책임자가 Claude in Chrome으로, 10/12)**: 속성 `https://me.sogang.ac.kr/`(sgmeoffice 계정) 정상. `/`는 색인됨, `/en`은 '사용자가 선택한 표준이 없는 중복 페이지'로 미색인(마지막 크롤링 10/12 03:40 — 위 수정 전). 원인: 구글봇(Accept-Language 없음·미국 IP)이 `/`에서 `/en`으로 307 → 구글이 `/`와 `/en`을 같은 페이지로 묶음. **조치**: 미들웨어에서 Accept-Language를 보내지 않는 클라이언트(검색 로봇)는 국문(`/ko`)으로(사람 브라우저는 항상 보내므로 기존 판별 그대로 — 로컬 7가지 경우 확인). 두 주소 색인 생성 요청은 책임자 측에서 완료, 배포 후 한 번 더 요청 권장. → 배포 후 재요청 완료(10/12 14:32·14:36 실제 URL 테스트): `/`는 국문 홈·표준 `/ko`로 인식, `/en`은 표준 `/en`·'색인 생성 가능', 둘 다 우선 크롤링 대기열. 색인 상태(`/en` 중복 페이지)는 재수집 후 바뀜. Search Console의 사이트맵 '일시적인 처리 오류' 표시는 구글 쪽 일시 상태 — 사이트맵은 정상(200, 4,794개 주소, 0.4초).
 - **남은 것**: 구글 반영은 재수집 후(수일~수주). Search Console › URL 검사에서 `https://me.sogang.ac.kr/en`·`/` 색인 생성 요청 권장. 검색 결과 위쪽 '사이트 이름' 줄은 도메인 단위라 영어 검색에서도 국문일 수 있음. `<html lang>`은 정적 HTML에선 ko, 브라우저에서 SetLang이 en으로 바꿈(구글은 lang 속성을 언어 판별에 쓰지 않음 — 근본 수정은 루트 레이아웃을 [locale]로 옮기는 큰 개편이라 보류).
+
+## 테스트 (2026-10-13) — 로봇 차단 후 하루치로 재판정: 10/15 갱신은 Pro 유지 (책임자가 Claude in Chrome으로 수치 제공)
+- **Firewall Past Day(10/12 11:33~10/13 11:33 KST)**: Allowed 35.5K(차단 전 174.3K → -80%), Challenged 22.4K(= `/v2/bbs/board.php` 12.1K + `download.php` 10.6K, 사용량 미집계), Denied 455. 다음 상위 경로 `/ko/reservation` 3.1K · `/en/reservation` 1.4K(영문 예약 페이지 하루 1.4천 회 — 로봇 추정, 예약 페이지는 searchParams 때문에 요청마다 렌더링) · `/ko` 1.1K. 상위 UA는 Chrome/133 맥·리눅스·윈도우 각 4.4~4.6K, Android Pixel 9·CPH2653 각 2.8K로 균일(위장 봇, 일부는 챌린지된 쪽일 수 있음).
+- **Usage "Oct 12"(PDT 기준 = KST 10/12 16:00~, 확인 시점까지 약 19시간)**: CDN Requests 32.34K · Function Invocations 17.8K · Fluid Active CPU 14분 · Fast Origin 348MB · Provisioned Memory 4.46GB-hr · Fast Data 364MB · ISR 쓰기 16.72K/읽기 12.24K. 30일 환산: CDN 107만~122만(Firewall/Usage 기준, 한도 100만) · 호출 약 67만(✓) · CPU 약 9시간(한도 4시간) · Origin 약 13GB(10GB) · 메모리 47%·데이터 14%·ISR 읽기 46%(✓). ISR 쓰기가 평소(2.8K/일)의 약 7배 — 10/12 배포 여러 번으로 캐시가 비워져 다시 만드는 중이라 CPU·Origin은 부풀려진 값. 평상시 값은 배포 없는 며칠 뒤 측정.
+- **판단**: 10/15 Pro 자동 갱신 유지. 다음: ① Bot Protection Log 모드로 켜서 남은 위장 봇 규모 확인 + 예약 페이지 접속자 확인(책임자 측 Claude in Chrome) ② 로봇이면 챌린지(켜기 전 `/api/cron/` Bypass 규칙) + 필요 시 예약 페이지를 캐시 가능 구조로 ③ 배포 없는 1주 측정 → 11/12쯤 최종 판정, 11/15 16:00 전 하향. 측정 기간 중 배포를 몰아서(다음 코드 반영 때 Next.js 14.2.35 보안 패치 동반 예정).
 
 ## 판정 (2026-10-12) — 10월은 Hobby 하향 불가, Pro 유지 (책임자가 Usage PDF 제공)
 - **실측(Usage, 기간 Sep 27–Oct 12 = 9/27 16:00 KST부터, 대시보드 날짜 경계는 미국 태평양시 자정 = KST 16:00. 출력 10/12 10:30 KST라 실제 약 14.75일분)**: CDN Requests(옛 Edge Requests) 1.52M · Function Invocations 587.82K · Fluid Active CPU 3시간(금액 $0.50 → 약 3.2시간) · Fast Origin 4GB · Fast Data 18GB · Provisioned Memory 49.15GB-hr · ISR 쓰기 40.7K/읽기 255.08K.
