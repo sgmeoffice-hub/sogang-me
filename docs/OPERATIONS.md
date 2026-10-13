@@ -44,7 +44,7 @@
 2. 새 세션을 열고 한국어로 작업을 요청하면 된다 (예: "학과소개 페이지 문구 고쳐줘")
 3. Claude는 세션 시작 시 루트 `CLAUDE.md`(작업 규칙)를 자동으로 읽고, 규칙에 따라 `docs/HANDOFF.md`(진행 상황)를 이어받는다 — **따로 설명할 필요 없음**
 4. 새 세션에게 전체 구조를 알려주려면 "docs/OPERATIONS.md 읽어" 한마디면 된다
-5. DB 작업이 필요한 세션은 환경변수가 필요하다: Claude Code 환경설정(Environment)에 `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`가 등록되어 있음 (값은 Supabase 대시보드 Settings → API)
+5. DB 작업이 필요한 세션은 환경변수가 필요하다: Claude Code 환경설정(Environment)에 `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`가 등록되어 있음 (값은 Supabase 대시보드 Settings → API). Vercel 사용량·방화벽을 Claude가 직접 보려면 `VERCEL_TOKEN`(Vercel 토큰, 팀 범위·만료일 지정)도 같은 곳에 — 새 세션부터 적용, `npx vercel usage --breakdown daily`, `npx vercel firewall traffic list` 등
 6. Claude가 작업을 마치면 HANDOFF.md를 갱신해 커밋하는 것이 규칙이다 — 세션이 바뀌어도 맥락이 이어진다
 
 ## 4. 백업 체계
