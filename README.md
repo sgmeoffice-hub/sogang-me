@@ -24,6 +24,7 @@ SQL Editor에서 **이 순서대로** 실행한다. 모두 여러 번 실행해�
 4. `schema_v7.sql` (`en_verified`) — 운영 DB에 **적용됐는지 미확인**: `select column_name from information_schema.columns where table_name='posts' and column_name='en_verified';`가 비면 실행
 5. `schema_v8.sql` (관리자 쓰기 정책, 예약자 연락처 anon 차단, URECA 재제출·예약 레이스 RPC) — 없으면 관리자 추가가 조용히 실패하고 예약자 연락처가 노출된다
 6. `schema_v9.sql` (2026-10-13: 예약 읽기 정책을 anon·관리자로 한정, URECA 재제출을 삭제 대신 `superseded`로, anon insert 정책·컬럼 제한, search_path, 인덱스, site_settings 공개 범위, `reset_sequences()`) — 코드 배포와 무관하게 실행해도 깨지는 화면은 없다. 단 관리자 URECA 화면에 `superseded`('재제출로 대체') 배지가 있는 코드가 배포되기 전이면 대체된 건이 '검토 중'으로 보이므로, 가능하면 2026-10-13 배포 뒤에 실행
+7. `verify_v9.sql` — 적용 확인용(읽기 전용). 통째로 Run하면 표 하나가 나오고 모든 행의 `ok`가 true여야 한다
 7. Authentication → Users → Add user(관리자, Auto confirm) → `insert into admins (email) values ('…');` → Authentication › Providers › Email에서 **"Allow new users to sign up" 끄기**(관리자는 수동 생성)
 - `vault` 저장소(휴지통·수정 이력)는 코드가 처음 쓸 때 자동 생성된다. 백업에서 전체를 되살리는 절차는 `docs/OPERATIONS.md` '새 Supabase 프로젝트 재구축'.
 
