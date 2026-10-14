@@ -7,13 +7,16 @@
 --    public/authenticated can execute security definer function). 본문을 모르는 함수라 지우지 않고(트리거가 쓰면 drop이 실패하므로 안전하긴 하지만
 --    확인 전까지 보존) 실행 권한을 service_role(SQL Editor·cron)로 좁히고 search_path를 고정한다. verify_v10이 정의 앞부분을 보여 주므로
 --    그걸 보고 필요 없으면 `drop function public.ureca_dedupe();`를 따로 실행한다. 함수가 없는 프로젝트(새로 복원한 경우)에서는 아무것도 하지 않는다.
+--    이름이 같은 함수가 인자 구성별로 여러 개여도(오버로드) 전부 처리한다 — 시그니처를 박아 두면 다른 시그니처일 때 조용히 건너뛰게 되므로.
 do $$
+declare f regprocedure;
 begin
-  if to_regprocedure('public.ureca_dedupe()') is not null then
-    alter function public.ureca_dedupe() set search_path = public;
-    revoke all on function public.ureca_dedupe() from public, anon, authenticated;
-    grant execute on function public.ureca_dedupe() to service_role;
-  end if;
+  for f in select p.oid::regprocedure from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+           where n.nspname = 'public' and p.proname = 'ureca_dedupe' loop
+    execute format('alter function %s set search_path = public', f);
+    execute format('revoke all on function %s from public, anon, authenticated', f);
+    execute format('grant execute on function %s to service_role', f);
+  end loop;
 end $$;
 
 -- 2) [정보 노출] media 버킷 목록 조회 차단(Advisor: Public Bucket Allows Listing).

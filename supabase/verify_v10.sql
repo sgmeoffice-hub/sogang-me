@@ -31,14 +31,13 @@ union all
 select '10 v8: 예약 anon select 컬럼 9개(contact·affiliation 없음)', count(*) = 9 and bool_and(column_name not in ('contact', 'affiliation')), string_agg(column_name, ',' order by column_name)
   from information_schema.column_privileges where table_name = 'reservations' and grantee = 'anon' and privilege_type = 'SELECT'
 union all
--- v10-1: 함수가 없으면 true(할 일 없음). 있으면 search_path 고정 + anon·authenticated 실행 불가여야 하고, detail에 정의 앞부분을 보여 준다(무슨 함수인지 기록용).
+-- v10-1: 함수가 없으면 true(할 일 없음). 있으면(오버로드 전부) search_path 고정 + anon·authenticated 실행 불가여야 하고, detail에 정의 앞부분을 보여 준다(무슨 함수인지 기록용).
 select '11 v10-1: ureca_dedupe 실행 권한 회수·search_path 고정',
-  coalesce((select 'search_path=public' = any(p.proconfig)
-                   and not has_function_privilege('anon', p.oid, 'execute')
-                   and not has_function_privilege('authenticated', p.oid, 'execute')
-            from pg_proc p where p.oid = to_regprocedure('public.ureca_dedupe()')), true),
-  coalesce((select left(regexp_replace(pg_get_functiondef(p.oid), '\s+', ' ', 'g'), 400)
-            from pg_proc p where p.oid = to_regprocedure('public.ureca_dedupe()')), '(함수 없음)')
+  coalesce(bool_and(coalesce('search_path=public' = any(p.proconfig), false)
+                    and not has_function_privilege('anon', p.oid, 'execute')
+                    and not has_function_privilege('authenticated', p.oid, 'execute')), true),
+  coalesce(string_agg(left(regexp_replace(pg_get_functiondef(p.oid), '\s+', ' ', 'g'), 400), ' | '), '(함수 없음)')
+  from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.proname = 'ureca_dedupe'
 union all
 select '12 v10-2: media 버킷 anon 목록 조회 정책("media public read") 제거', count(*) = 0, coalesce(string_agg(policyname, ','), '')
   from pg_policies where schemaname = 'storage' and tablename = 'objects' and policyname = 'media public read'

@@ -13,7 +13,7 @@ Next.js 15 (App Router) · Tailwind · TypeScript · Supabase(DB/인증/파일) 
 | `app/api/…` | 예약·URECA 접수, 조회수, cron(번역 보완·백업), 관리자 API |
 | `content/`, `lib/i18n.ts` | 고정 페이지 본문(국/영)·연혁·학사일정·전공소개, 공통 문구 |
 | `lib/` | 데이터 조회·캐시(`data.ts`, `refresh.ts`), 번역, 백업(`backup.ts`, `r2.ts`, `vault.ts`) |
-| `supabase/` | DB 스키마(`schema.sql` + `schema_v3`~`v9`), 시드 |
+| `supabase/` | DB 스키마(`schema.sql` + `schema_v3`~`v10`, 확인용 `verify_v10.sql`), 시드 |
 | `scripts/` | 복원(`restore-backup.mjs`), 드라이브 주간 백업(`gas-db-backup.gs`), 옛 홈페이지 이관(`parse_dump.py`·`migrate_legacy.py`) |
 
 ## 스키마 적용 순서 (새 Supabase 프로젝트)
