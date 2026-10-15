@@ -1,6 +1,14 @@
 # HANDOFF — 세션 간 인수인계
 
-마지막 갱신: 2026-10-13
+마지막 갱신: 2026-10-15
+
+## 판정 (2026-10-15 09:30 KST, 예약 작업 자동 실행) — Vercel Pro→Hobby 전환: **가능(조건부)**
+- 자료: `vercel usage --scope sg-office --since 2026-10-12 --breakdown daily --json`(PDT 일자 기준)과 `vercel metrics … -g 1h --json`을 1시간 버킷으로 합산(세션 스크래치 vm.py). 비교 기준 = Hobby 월 한도의 1/30×0.8(하루 안전선): CDN 요청·함수 호출 27,000 · Active CPU 6.4분 · Origin 267MB · ISR 쓰기 5,333 · ISR 읽기 26,667 · 메모리 9.6GBh.
+- **Usage(PDT 일자)**: 10/12 — 함수 호출 21,465 · CPU 17.0분 · Origin 415MB · ISR 쓰기 16,928 · 읽기 13,783 · 메모리 5.3GBh / 10/13 — 함수 호출 20,885 · CPU 8.8분 · Origin 280MB · ISR 쓰기 13,214 · 읽기 16,448 · 메모리 2.6GBh. 둘 다 **배포 재생성이 포함된 날**(10/13 PDT에 3720c79·1ac71c8·616ecdb 배포, 15:14Z READY). Usage의 '함수 호출'은 metrics의 함수 5,894 + 미들웨어 14,868 합과 일치 — 미들웨어가 도는 페이지 요청이 호출 수의 70%. 10/14 PDT는 Usage 집계가 아직 안 나와 metrics로 본다.
+- **metrics 10/13 PDT(24h)**: 요청 81,566 = challenge 49,585(/v2/bbs download.php·board.php 스크래핑 — 과금 안 됨) + log 25,134(Bot Protection Log 모드, 과금됨) + allow 6,793 + deny 16. 함수 CPU 252초, Origin 143MB, ISR 쓰기 13,208·읽기 16,065.
+- **metrics 10/14 PDT(배포 없음, 07:00Z~24:00Z 17시간 → 하루 환산)**: 요청 12,475(과금 대상 log+allow 7,892 → **하루 11.1K = 안전선 41%**) · 함수 1,377 + 미들웨어 1,487 → **하루 4.0K(15%)** · 함수 CPU 80초 → 1.9분(30%; Usage의 Active CPU는 metrics 합의 약 2배로 잡혀 ~4분, 60%) · Origin 22MB → 31MB(12%) · ISR 쓰기 1,454 → 2.1K(38%) · 읽기 7,981 → 11.3K(42%). 상위 ASN: KT 1,481 · Google 659 · SKB 650 · Alibaba(US) 560 · LG 555 · Orange 488 · Microsoft 449(차단 규칙 뒤 잔여) · Sprious 330. deny 3건 = 'Azure 스크레이퍼 차단'. 함수 호출 상위: /admin 266 · /api/view 264 · 글 상세 262 · 게시판 목록 223 · /reservation 200.
+- **판정**: 배포가 없는 날은 모든 항목이 하루 안전선 안쪽 → **갱신(10/15 16:00 KST) 전에 Hobby로 내려도 된다.** 조건: ① **배포 1회 ≈ ISR 쓰기 13K + CPU 4~5분**(크롤러가 4,800쪽을 다시 만듦) → 배포는 주 1~2회로 묶는다(매일 배포하면 CPU 월 4시간을 넘긴다; 문서만 바꾼 커밋은 ignoreCommand로 배포 생략됨) ② `/v2/bbs` challenge(vercel.json routes)와 'Azure 스크레이퍼 차단' 규칙 유지 — WAF 커스텀 규칙·challenge는 모든 플랜에서 제공(Persistent Actions·Rate Limit 규칙 같은 Pro 전용 기능은 쓰지 않음) ③ 선택: Firewall › Bot Protection을 Log→**Challenge**로 바꾸면 과금 요청의 약 40%(호스팅 업체 봇)가 더 빠진다 ④ Hobby는 한도 초과 시 과금 대신 **프로젝트 일시 중지**(다음 주기까지 사이트 중단) → 첫 달은 매주 `vercel usage`로 확인 ⑤ cron 2개·하루 1회 제약은 이미 맞춰져 있음(OPERATIONS).
+- 전환 절차(책임자, 대시보드): 팀 `sg-office` → Settings › Billing → 플랜을 Hobby로 변경(팀에 책임자 1명만 있어야 함). 전환 직후 Firewall 규칙과 cron이 그대로인지 확인.
 
 ## 완료 (2026-10-13) — 보안 패치 + Next.js 15 업그레이드 + 전수 검사 114건 수정 (책임자: "보안 패치도 지금 같이", "무료로 돌릴 수 있도록 전수 검사, 다른 버그도")
 - **보안·업그레이드**: 14.2.25→14.2.35 적용 후 확인하니 **14.x는 보안 지원이 끝남** — 2026년 공개 취약점(Server Actions DoS GHSA-m99w-x7hq-7vfj·RSC DoS GHSA-8h8q-6873-q5fj 등 high 여러 건, 이미지 최적화 AVIF RCE GHSA-2xp9-vwfh-vxw4 critical)은 15.5.21~24에서만 수정. 무료 한도에서는 DoS=CPU 초과=중단이라 **Next 15.5.27 + React 19.3으로 업그레이드**(별도 워크트리에서 codemod `next-async-request-api` → params/searchParams/cookies 비동기, `createClient()` async, `req.geo` 제거, `experimental.staleTimes.dynamic: 30`로 Next 14과 같은 브라우저 라우터 캐시). `images.unoptimized: true`(next/image 미사용, /_next/image 닫음). 빌드에 타입 검사 포함(ignoreBuildErrors 제거). 남은 npm audit: tiptap v2 moderate(mergeAttributes, v3 메이저 필요 — 관리자 전용 편집기라 보류).
