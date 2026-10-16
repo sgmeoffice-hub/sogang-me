@@ -46,3 +46,4 @@ export function parseOffice(office?: string | null): { building: string | null; 
   const r = s.match(/([\w\-]+)\s*호/);
   return { building: b?.code || null, room: r ? r[1] : null };
 }
+// 2026-10-16 Hobby 전환 뒤 커밋 작성자(claude) 배포 허용 여부 확인용 주석 — 삭제해도 됨
