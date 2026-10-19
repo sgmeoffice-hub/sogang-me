@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createPublicClient } from '@/lib/supabase-server';
+import { serviceClient } from '@/lib/vault';
 import { notifyAdmin } from '@/lib/notify';
 import { escapeHtml as esc } from '@/lib/html';
 import { allow, clientIp } from '@/lib/ratelimit';
@@ -23,12 +24,12 @@ export async function POST(req: Request) {
   const { error } = await sb.from('ureca_applications').insert(row);
   // DB 오류 문구는 서버 로그에만 — 클라이언트에는 일반 문구(2026-10-13)
   if (error) { console.error('[ureca] insert', error.message); return fail('db', '저장 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.', 500); }
-  /* 같은 학생이 같은 연도·학기에 다시 제출하면 이전 지원서를 대체합니다 (마지막 제출본만 유지).
-   * anon에는 select/delete 정책이 없으므로 security definer RPC(schema_v8)가 방금 넣은
-   * 최신 행만 남기고 이전 pending 지원서를 지운다. RPC 미설치면 중복이 남고 관리자 화면에서 정리한다. */
+  /* 같은 학생이 같은 연도·학기에 다시 제출하면 이전 pending 지원서를 'superseded'로 바꾼다(schema_v9 — 마지막 제출본만 검토 대기, 기록은 보존).
+   * service role로 호출(2026-10-19): schema_v12가 anon·authenticated EXECUTE를 회수해 학번만 알면 REST로 남의 지원서를 대체 처리하던 경로를 닫는다.
+   * RPC 미설치면 중복 pending이 남고 관리자 화면에서 정리한다. (운영 DB에 있던 ureca_dedupe 트리거는 v11에서 제거) */
   let replaced = false;
   try {
-    const { data: n, error: rpcErr } = await sb.rpc('replace_ureca_application', { p_year: row.year, p_term: row.term, p_student_id: row.student_id });
+    const { data: n, error: rpcErr } = await serviceClient().rpc('replace_ureca_application', { p_year: row.year, p_term: row.term, p_student_id: row.student_id });
     if (!rpcErr && typeof n === 'number') replaced = n > 0;
   } catch { /* RPC 미설치 — 대체 생략 */ }
   const site = process.env.NEXT_PUBLIC_SITE_URL || '';

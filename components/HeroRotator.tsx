@@ -37,9 +37,12 @@ export default function HeroRotator({ videos }: { videos: HeroVideoItem[] }) {
 
   useEffect(() => {
     // 순서 셔플은 클라이언트에서만 (SSR 마크업 불일치 방지)
-    // 움직임 줄이기 설정·데이터 절약 모드에서는 영상을 아예 마운트하지 않는다 — 아래 CSS 포스터 슬라이드쇼가 그대로 보인다(14편 ≈ 13MB 절약, 2026-10-13)
+    // 데이터 절약 모드(폰의 명시적 설정)에서만 영상을 마운트하지 않는다 — 아래 CSS 포스터 슬라이드쇼가 그대로 보인다.
+    // prefers-reduced-motion은 더 이상 보지 않는다(2026-10-19 책임자 결정): 사무용 PC의 '시각 효과 → 최적 성능'·'애니메이션 효과 끄기'
+    // 설정이 이 값을 켜 놓는 경우가 많아, 10/13에 넣었던 조건 때문에 책임자 PC를 비롯한 많은 방문자에게 배경 영상이 아예 안 나왔다.
+    // (그 설정에서는 CSS 애니메이션도 꺼져 포스터 전환조차 멈추므로 '사진 한 장 고정'으로 보였다.)
     const nav = navigator as Navigator & { connection?: { saveData?: boolean } };
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || nav.connection?.saveData) return;
+    if (nav.connection?.saveData) return;
     setOrder(interleavedOrder(videos));
   }, [videos.length]);
 

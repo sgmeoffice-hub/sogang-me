@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { createPublicClient } from '@/lib/supabase-server';
+import { serviceClient } from '@/lib/vault';
 import { notifyAdmin } from '@/lib/notify';
 import { facilities } from '@/lib/nav';
 import { escapeHtml as esc } from '@/lib/html';
@@ -73,7 +74,8 @@ export async function POST(req: Request) {
     if (race && race.length) {
       // anon은 delete 정책이 없으므로 security definer RPC로 자기 행만 회수한다 (schema_v8).
       // RPC가 아직 없으면 pending 2건이 남아 관리자 화면에서 정리된다.
-      await sb.rpc('withdraw_conflicted_reservation', { p_id: inserted.id });
+      // service role로 호출(2026-10-19): schema_v12가 anon·authenticated EXECUTE를 회수해 REST로 남의 pending 예약을 물리는 경로를 닫는다.
+      await serviceClient().rpc('withdraw_conflicted_reservation', { p_id: inserted.id });
       return fail('race', '방금 같은 시간에 다른 신청이 접수되었습니다. 다른 시간을 선택해 주세요.', 409);
     }
   }

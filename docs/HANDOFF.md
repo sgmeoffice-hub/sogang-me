@@ -2,6 +2,13 @@
 
 마지막 갱신: 2026-10-19
 
+## 2026-10-19 — 배경 영상 원인·수정, v11 적용 확인, Hobby 사용량 실측(대시보드), v12
+- **배경 영상 안 나옴(책임자 PC Chrome)의 원인 = `prefers-reduced-motion: reduce`**. Chrome 대행 진단: `reducedMotion:true, saveData:false, videos:[]`, mp4 요청 0건, 콘솔 오류 0, 포스터 14장 200. 10/13에 넣은 "움직임 줄이기 설정에서는 영상을 마운트하지 않음" 조건이 그대로 작동한 것이고, 그 OS 설정은 CSS 애니메이션도 끄므로 포스터 전환까지 멈춰 '사진 한 장 고정'으로 보였다. 사무용 Windows의 '시각 효과 → 최적 성능'/'애니메이션 효과 끄기'가 이 값을 켜므로 방문자 상당수가 같은 상태였을 것. 컨테이너에 진짜 Chrome 155를 설치해 확인한 결과 reduce가 아닌 환경에서는 14편이 정상 재생·순환(readyState 4, 5.5초 전환). **수정: `components/HeroRotator.tsx`에서 reduced-motion 조건 제거(데이터 절약 모드 조건만 유지)** — 책임자 결정(10/19).
+- **같은 배포에 묶은 것**: `app/api/view`·`reservations`·`ureca` 세 라우트의 RPC 호출을 anon 클라이언트 → `serviceClient()`(service role)로 변경(insert는 그대로 anon → RLS 정책 유지). 배포 뒤 **`supabase/schema_v12.sql`**(세 함수의 anon·authenticated EXECUTE 회수)을 실행하면 Advisor 경고 8건이 사라지고 REST 직접 호출(조회수 부풀리기·남의 pending 예약/지원서 건드리기)이 막힌다. 순서 주의: v12는 반드시 배포 뒤. 로컬 Postgres에서 v12·verify_v12(5행) 통과.
+- **v11 적용 완료(Chrome 대행 보고서)**: v11 Success, verify_v11 5행 true(상태별 archived 1,144·pending 18). 세션에서 REST로 재확인: 같은 키 3건 insert → 3건 모두 남음, `replace_ureca_application` → 1, 결과 accepted·superseded·pending(시험 행 삭제). 트리거 삭제 효과 확인.
+- **Hobby 사용량(대시보드 실측, Chrome 대행)**: 표시 기간 **"Last 30 Days"(롤링 30일, Sep 19 05:00 – Oct 19 05:00)**. Active CPU **9h 19m / 4h**, Function Invocations **1,224,171 / 1,000,000**(둘 다 한도 초과 표시), ISR Writes 111,503/200,000, ISR Reads 440,778/1,000,000, Origin 8.07/10GB, Memory 98.6/360GBh. 경고 문구·paused 표시는 없고 사이트는 정상 동작 중 — Pro 기간(9/19~10/15, 스크레이퍼 시기)의 사용량이 창에 포함된 결과. **롤링 30일 추정(Pro 기간 일별 실측 + Hobby 기간 하루 CPU 3분·호출 5천 가정)**: 호출은 10/23쯤 1M 아래, CPU는 **10/29쯤 4h 아래**, 11/12 이후 CPU ≈1.5h·호출 ≈0.15M으로 안정. Vercel이 이 창 기준으로 일시 중지할 가능성은 배제할 수 없으나 4일간 조치가 없었고, 배포 1회(CPU ~5분·호출 ~1만·ISR 쓰기 ~1.3만)는 이 숫자 대비 미미해 10/19 배포는 진행. `vercel usage` API는 Hobby에서 0을 돌려주므로(과금 원장) 대시보드로만 확인 — 일일 점검 루틴이 0이면 대시보드 확인을 요청하도록 해 둠.
+- 봇 판정(log) 트래픽은 지난 25시간 2.2k건이고 대부분 미국 통신사 ASN(Comcast·AT&T·T-Mobile·Starlink)의 `Chrome/142` UA — 주거용 IP 봇넷 형태라 ASN 규칙으로는 못 거른다. 현재 수준(하루 ~5천 호출)은 한도 안이므로 추가 규칙은 두지 않는다.
+
 ## 2026-10-16~19 — Hobby 전환 뒤 점검 결과 (책임자 "hobby로 전환했음. 문제 없는지 봐")
 - **플랜·설정**: 팀 `sg-office` plan=hobby, 멤버는 책임자(OWNER) 1명. 방화벽(Bot Protection·AI Bots·BotID·'Azure 스크레이퍼 차단'), cron 2개(18:00·19:00 UTC, enabled), 환경변수 13개, Fluid compute, iad1, 커스텀 도메인 모두 그대로. 사이트 전 경로 200(ISR HIT), `/v2/bbs` 429(challenge), cron 무인증 401, 예약 API 검증 400, 보안 헤더 정상.
 - **배포 가능 여부**: Hobby는 "커밋 작성자가 계정 소유자"여야 배포되는데 이 세션의 커밋은 `githubCommitAuthorLogin=claude`로 기록된다 → 공개 리포라 허용되는지 시험: 임시 브랜치에 주석 한 줄 커밋을 밀어 **미리보기 배포 READY 확인**(이후 브랜치·배포 삭제). 즉 이 세션의 push로 배포가 계속 된다.
