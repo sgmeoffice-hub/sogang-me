@@ -26,6 +26,7 @@ SQL Editor에서 **이 순서대로** 실행한다. 모두 여러 번 실행해�
 6. `schema_v9.sql` (2026-10-13: 예약 읽기 정책을 anon·관리자로 한정, URECA 재제출을 삭제 대신 `superseded`로, anon insert 정책·컬럼 제한, search_path, 인덱스, site_settings 공개 범위, `reset_sequences()`) — 코드 배포와 무관하게 실행해도 깨지는 화면은 없다. 단 관리자 URECA 화면에 `superseded`('재제출로 대체') 배지가 있는 코드가 배포되기 전이면 대체된 건이 '검토 중'으로 보이므로, 가능하면 2026-10-13 배포 뒤에 실행
 7. `schema_v10.sql` (2026-10-14: Security Advisor 후속 — 수동 생성된 `ureca_dedupe()` 실행 권한 회수·search_path 고정, media 버킷 anon 목록 조회 정책 제거) — 코드 변경·배포 불필요
 8. `verify_v10.sql` — 적용 확인용(읽기 전용, v7~v10 13항목). 통째로 Run하면 표 하나가 나오고 모든 행의 `ok`가 true여야 한다 (`verify_v9.sql`은 v9까지의 10항목)
+9. `schema_v11.sql` (2026-10-16: 운영 DB에만 있던 `ureca_dedupe` **트리거** 제거 — 재제출 때 같은 학생의 선발·미선발 기록까지 지우던 것; 함께 만들어졌을 수 있는 유일 인덱스도 제거) → `verify_v11.sql`로 확인. 새 프로젝트에는 그 트리거가 없으므로 실행해도 아무 일도 하지 않는다
 7. Authentication → Users → Add user(관리자, Auto confirm) → `insert into admins (email) values ('…');` → Authentication › Providers › Email에서 **"Allow new users to sign up" 끄기**(관리자는 수동 생성)
 - `vault` 저장소(휴지통·수정 이력)는 코드가 처음 쓸 때 자동 생성된다. 백업에서 전체를 되살리는 절차는 `docs/OPERATIONS.md` '새 Supabase 프로젝트 재구축'.
 
