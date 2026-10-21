@@ -25,6 +25,10 @@ drop policy if exists "ureca public insert" on ureca_applications;
 create policy "ureca public insert" on ureca_applications for insert with check (status = 'pending');
 drop policy if exists "ureca admin all" on ureca_applications;
 create policy "ureca admin all" on ureca_applications for all using (is_admin()) with check (is_admin());
+-- Data API 권한(2026-10-21 추가, schema.sql 끝의 설명 참조): 2026-10-30 이후 새 표·시퀀스는 명시적 grant가 있어야 PostgREST가 접근한다.
+-- anon의 insert 열 제한은 v9가, 트리거 제거는 v11이 이어서 처리한다.
+grant select, insert, update, delete on table public.ureca_applications to anon, authenticated, service_role;
+grant usage, select on sequence public.ureca_applications_id_seq to anon, authenticated, service_role;
 
 update site_settings set value = value || '{"notify_email":"sgmeoffice@gmail.com"}'::jsonb where key='home' and not (value ? 'notify_email');
 alter table posts add column if not exists category_en text;

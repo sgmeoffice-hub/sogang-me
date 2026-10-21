@@ -27,6 +27,7 @@ SQL Editor에서 **이 순서대로** 실행한다. 모두 여러 번 실행해�
 7. `schema_v10.sql` (2026-10-14: Security Advisor 후속 — 수동 생성된 `ureca_dedupe()` 실행 권한 회수·search_path 고정, media 버킷 anon 목록 조회 정책 제거) — 코드 변경·배포 불필요
 8. `verify_v10.sql` — 적용 확인용(읽기 전용, v7~v10 13항목). 통째로 Run하면 표 하나가 나오고 모든 행의 `ok`가 true여야 한다 (`verify_v9.sql`은 v9까지의 10항목)
 9. `schema_v11.sql` (2026-10-16: 운영 DB에만 있던 `ureca_dedupe` **트리거** 제거 — 재제출 때 같은 학생의 선발·미선발 기록까지 지우던 것; 함께 만들어졌을 수 있는 유일 인덱스도 제거) → `verify_v11.sql`로 확인. 새 프로젝트에는 그 트리거가 없으므로 실행해도 아무 일도 하지 않는다
+- **새 표를 만드는 마이그레이션은 grant를 함께 넣는다** — Supabase는 2026-10-30부터 public의 새 표·시퀀스에 anon/authenticated/service_role 권한을 자동으로 주지 않는다(기존 표는 그대로). `schema.sql`·`schema_v3.sql` 끝에 지금 표 전부의 grant를 넣어 두었고(2026-10-21), 앞으로 추가하는 표는 `grant select, insert, update, delete on table public.<표> to anon, authenticated, service_role; grant usage, select on sequence public.<표>_id_seq to anon, authenticated, service_role;`를 같은 파일에 쓴다(행 제한은 RLS 정책으로).
 10. `schema_v12.sql` (2026-10-19: 공개 RPC 3개 `increment_view`·`withdraw_conflicted_reservation`·`replace_ureca_application`의 anon·authenticated 실행 권한 회수 — **세 API 라우트가 service role로 호출하는 2026-10-19 코드가 배포된 뒤에** 실행) → `verify_v12.sql`
 7. Authentication → Users → Add user(관리자, Auto confirm) → `insert into admins (email) values ('…');` → Authentication › Providers › Email에서 **"Allow new users to sign up" 끄기**(관리자는 수동 생성)
 - `vault` 저장소(휴지통·수정 이력)는 코드가 처음 쓸 때 자동 생성된다. 백업에서 전체를 되살리는 절차는 `docs/OPERATIONS.md` '새 Supabase 프로젝트 재구축'.

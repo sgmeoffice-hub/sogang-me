@@ -174,3 +174,14 @@ create policy "media admin write" on storage.objects for all
 insert into site_settings (key, value) values
  ('home', '{"sections":["hero","intro","news","quicklinks","programs","gallery"],"news_count":6,"tagline_ko":"움직이는 모든 것의 원리를 설계합니다","tagline_en":"We design the principles behind everything that moves"}')
 on conflict (key) do nothing;
+
+-- Data API 권한(2026-10-21 추가). Supabase는 2026-10-30부터 public 스키마에 **새로 만드는** 표·시퀀스에 anon/authenticated/service_role
+-- 권한(select/insert/update/delete, usage/select)을 자동으로 주지 않는다(기존 표는 영향 없음). 새 프로젝트에 이 파일로 재구축할 때
+-- 아래가 없으면 PostgREST가 42501 permission denied를 내 사이트·관리자·cron이 전부 멈춘다. 예전 기본값과 같게 명시적으로 준다 —
+-- 행 수준 제한은 위의 RLS 정책이 담당하고, 이후 v8·v9가 reservations·ureca_applications의 anon 권한을 열 단위로 좁히며 v12가 함수 권한을 회수한다.
+-- 여러 번 실행해도 안전. 새 표를 추가하는 마이그레이션에는 반드시 같은 grant를 함께 넣는다(README '스키마 적용 순서').
+grant select, insert, update, delete on table public.admins, public.posts, public.faculty, public.pages, public.reservations, public.banners, public.site_settings
+  to anon, authenticated, service_role;
+grant usage, select on all sequences in schema public to anon, authenticated, service_role;
+grant execute on function public.is_admin() to anon, authenticated, service_role;                 -- RLS 정책 평가에 필요
+grant execute on function public.increment_view(bigint) to anon, authenticated, service_role;     -- v12에서 service_role만 남기고 회수
