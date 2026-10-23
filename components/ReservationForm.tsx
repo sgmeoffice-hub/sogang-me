@@ -1,5 +1,6 @@
 'use client';
 import { useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { facilities } from '@/lib/nav';
 import { START_SLOTS, END_SLOTS } from '@/lib/reservation';
 import type { Locale } from '@/lib/i18n';
@@ -27,6 +28,7 @@ function errorText(code: string | undefined, fallback: string | undefined, ko: b
 
 export default function ReservationForm({ locale, facility, date }: { locale: Locale; facility: string; date?: string }) {
   const ko = locale === 'ko';
+  const router = useRouter();
   const [state, setState] = useState<'idle' | 'saving' | 'done' | 'error'>('idle');
   const [msg, setMsg] = useState('');
   const [warn, setWarn] = useState('');
@@ -63,7 +65,13 @@ export default function ReservationForm({ locale, facility, date }: { locale: Lo
     try {
       const r = await fetch('/api/reservations', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(row) });
       const j = await r.json().catch(() => ({}));
-      if (!r.ok) { setMsg(errorText(j.code, j.error, ko, Array.isArray(j.conflicts) ? conflictList(j.conflicts) : '')); setState('error'); } else setState('done');
+      if (!r.ok) { setMsg(errorText(j.code, j.error, ko, Array.isArray(j.conflicts) ? conflictList(j.conflicts) : '')); setState('error'); }
+      else {
+        setState('done');
+        // 서버는 응답 전에 예약 캐시를 비우지만(revalidateTag·revalidatePath) 이미 그려진 달력은 그대로라 새로고침 전엔 '승인 대기'가 안 보였다(책임자 보고 2026-10-23).
+        // router.refresh()는 서버 컴포넌트(달력)만 다시 받아오고 이 폼의 완료 상태는 유지한다 — 함수 호출 1회 추가.
+        router.refresh();
+      }
     } catch {
       // 네트워크 오류·게이트웨이 시간 초과 — 버튼이 '…'에 갇히지 않게 상태를 되돌린다
       setMsg(ko ? '네트워크 오류로 전송하지 못했습니다. 다시 시도해 주세요.' : 'Network error — please try again.'); setState('error');
