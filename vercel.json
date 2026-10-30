@@ -3,6 +3,15 @@
   "routes": [
     {
       "src": "^/(?:v2/)?bbs(?:/.*)?$",
+      "missing": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": {
+            "re": ".*(Googlebot|Google-InspectionTool|Yeti|bingbot|Daum|kakaotalk-scrap).*"
+          }
+        }
+      ],
       "mitigate": {
         "action": "challenge"
       },
