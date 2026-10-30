@@ -8,7 +8,7 @@
           "type": "header",
           "key": "user-agent",
           "value": {
-            "re": ".*(Googlebot|Google-InspectionTool|Yeti|bingbot|Daum|kakaotalk-scrap).*"
+            "re": ".*(Googlebot|Google-InspectionTool|Yeti|bingbot|Daum|kakaotalk-scrap|OAI-SearchBot|ChatGPT-User|PerplexityBot|Perplexity-User|Claude-SearchBot|Claude-User).*"
           }
         }
       ],
