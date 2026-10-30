@@ -41,7 +41,10 @@ export default async function PostPage(props: { params: Promise<{ locale: Locale
   if (p.advisor) meta.push([ko ? '지도교수' : 'Advisor', ko ? p.advisor : peopleEn(names, p.advisor)]);
   const images: { url: string; caption?: string }[] = p.images || [];
   const files: { name: string; url: string; size?: number }[] = p.attachments || [];
-  const contentHasImg = /<img/i.test(html || '');
+  // '대표 이미지 / 갤러리 사진'에 올린 사진은 본문 위에 자동으로 보인다 — 본문에 이미 들어 있는 사진(같은 주소)만 뺀다.
+  // 예전에는 본문에 사진이 한 장이라도 있으면 갤러리 사진을 전부 숨겨, 공지에 사진을 올려도 안 보였다(2026-10-30 박현주 선생님 요청).
+  const body = html || '';
+  const topImages = images.filter((im) => im?.url && !body.includes(im.url) && !body.includes(im.url.replace(/&/g, '&amp;')));
   return (<>
     <PageHero locale={l} section={section} current={current} image={p.thumbnail_url || images[0]?.url || undefined} />
     <ViewCounter id={p.id} />
@@ -57,9 +60,10 @@ export default async function PostPage(props: { params: Promise<{ locale: Locale
       </header>
       {meta.length > 0 && <dl className="mt-6 grid sm:grid-cols-2 gap-x-8 gap-y-2 bg-sg-mist p-5 text-[14.5px]">{meta.map(([k, v]) => <div key={k} className="flex gap-3"><dt className="w-24 shrink-0 text-sg-gray9">{k}</dt><dd className="font-medium">{v}</dd></div>)}</dl>}
       {p.video_url && <div className="mt-8"><YouTube url={p.video_url} title={p.title_ko} /><p className="mt-2 text-[13px] text-sg-gray9"><a href={p.video_url} target="_blank" rel="noreferrer" className="hover:text-sg-cardinal">{ko ? 'YouTube에서 보기' : 'YouTube link'} ↗</a></p></div>}
-      {!contentHasImg && images.length > 0 && (
-        <div className={`mt-8 grid gap-3 ${images.length > 1 ? 'sm:grid-cols-2' : ''}`}>{images.map((im, i) => (
-          <figure key={i}><img src={im.url} alt={im.caption || ''} className="w-full h-auto border border-sg-line" loading="lazy" />{im.caption && <figcaption className="text-[13px] text-sg-gray9 mt-1">{im.caption}</figcaption>}</figure>
+      {/* 갤러리 게시판은 사진첩처럼 2열, 그 밖의 게시판(공지 포스터 등)은 옛 홈페이지처럼 한 장씩 본문 폭으로 */}
+      {topImages.length > 0 && (
+        <div className={`mt-8 grid gap-3 ${board === 'gallery' && topImages.length > 1 ? 'sm:grid-cols-2' : ''}`}>{topImages.map((im, i) => (
+          <figure key={im.url + i}><img src={im.url} alt={im.caption || ''} className="w-full h-auto border border-sg-line" loading={i === 0 ? 'eager' : 'lazy'} decoding="async" />{im.caption && <figcaption className="text-[13px] text-sg-gray9 mt-1 break-keep">{im.caption}</figcaption>}</figure>
         ))}</div>
       )}
       <div className="prose-sg mt-8 min-h-[120px]" dangerouslySetInnerHTML={{ __html: html || `<p class="text-sg-gray9">${ko ? '본문이 없습니다.' : 'No content.'}</p>` }} />

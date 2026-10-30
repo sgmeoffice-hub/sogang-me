@@ -58,6 +58,7 @@ export default function PostForm({ post, defaultBoard }: { post?: any; defaultBo
       <section className="grid gap-6 md:grid-cols-2">
         <div className="border border-sg-line bg-white p-4">
           <p className="text-[13px] font-semibold">대표 이미지 / 갤러리 사진</p>
+          <p className="mt-1 text-[12px] text-sg-steel break-keep">여기 올린 사진은 <b>글 본문 위에 자동으로 표시</b>됩니다(본문에 이미 넣은 사진은 한 번만 보임). ‘대표’로 고른 사진은 목록·메인 카드의 썸네일로도 쓰입니다.</p>
           <div className="mt-2 flex flex-wrap gap-2">{images.map((im, i) => (
             <div key={i} className={`relative w-24 h-24 border ${thumb === im.url ? 'border-sg-red ring-2 ring-sg-red' : 'border-sg-line'}`}>
               <img src={im.url} alt="" className="w-full h-full object-cover" />
@@ -68,6 +69,7 @@ export default function PostForm({ post, defaultBoard }: { post?: any; defaultBo
         </div>
         <div className="border border-sg-line bg-white p-4">
           <p className="text-[13px] font-semibold">첨부파일</p>
+          <p className="mt-1 text-[12px] text-sg-steel break-keep">첨부파일은 글 아래 <b>내려받기 목록</b>으로만 보입니다. 화면에 보여 줄 사진은 왼쪽 ‘사진 추가’로 올려 주세요.</p>
           <ul className="mt-2 space-y-1 text-[13px]">{files.map((f, i) => <li key={i} className="flex justify-between gap-2"><a href={f.url} target="_blank" rel="noreferrer" className="truncate hover:text-sg-red">{f.name}</a><button type="button" onClick={() => setFiles(files.filter((_, j) => j !== i))} className="text-sg-red">삭제</button></li>)}</ul>
           <div className="mt-3"><Uploader folder="files" accept={FILE_ACCEPT} multiple label="+ 파일 추가" onDone={(fs) => setFiles([...files, ...fs])} /></div>
         </div>
