@@ -10,7 +10,9 @@
 - **방화벽 초안(미적용, 책임자 승인 대기)**: rule_azure_e2uZcH에 OR 그룹 3개를 staging만 해 두었다.
   - ① UA sub `Rhythm/0.1`
   - ② 중국 DC JA4 `t13d1812h1_85036bcba153_d41ae481755e`
-  - ③ `geo_country US` AND 위 JA4 AND UA sub `Chrome/142.0.0.0`
+  - ③ `geo_country US` AND UA **eq** `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36`
+    - 11/26에 고쳤다. 원래는 위 JA4를 조건으로 넣었는데, 봇이 11/25 12시 UTC부터 JA4를 `t13d1517h2_8daaf6152771_cb7bf5808d99`로 바꿨다. 이 JA4는 일반 최신 Chrome과 같아서 한국 사용자도 쓴다.
+    - 그래서 JA4 대신 고정 UA로 거른다. 미국+이 UA 조합은 7일간 45.6만 건이고, 11/22 이전에는 거의 0이라 오차단 위험이 낮다.
   - 이름은 "스크레이퍼 차단(Azure·AionBot·Alibaba US·JA4·Awario·Rhythm·US프록시)"이다.
   - Vercel CLI 65부터 방화벽 publish에 사람의 명시적 승인이 필요하다(`--yes`로는 안 됨). 책임자가 "적용해"라고 답하면 `vercel firewall publish --yes`로 effects digest를 받은 뒤 `--confirm-name sogang-me --effects-digest <digest>`로 적용한다.
 - **최근 30일(10/26~11/25 00:51 UTC) vs Hobby 한도**:
